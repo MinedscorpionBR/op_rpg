@@ -1202,3 +1202,112 @@ button {
         text-align: center;
     }
 }
+
+/* ============================================================
+   PATCH DE IMAGENS DOS BOTÕES + HAKI ATIVO
+   ============================================================ */
+.has-button-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.button-thumb {
+    width: 42px;
+    height: 34px;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 7px;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 6px;
+    box-shadow: 0 3px 9px rgba(0,0,0,.35);
+}
+
+.faccao-btn .button-thumb,
+.action-card .button-thumb,
+.boat-card .button-thumb {
+    width: 58px;
+    height: 42px;
+}
+
+.btn-acao.has-button-image {
+    min-height: 62px;
+}
+
+.action-card.has-button-image {
+    min-height: 165px;
+}
+
+.btn-haki-toggle.has-button-image {
+    min-height: 86px;
+}
+
+.route-node.has-button-image {
+    min-height: 145px;
+}
+
+/* O efeito pedido: os cantos ficam pretos quando o Haki é ativado. */
+.btn-haki-toggle.ativado {
+    border-color: #000;
+    box-shadow:
+        inset 0 0 0 5px #000,
+        inset 0 0 24px rgba(0,0,0,.96),
+        0 0 0 2px rgba(0,0,0,.8),
+        0 7px 0 #000;
+}
+
+.btn-haki-toggle.ativado::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(135deg, rgba(0,0,0,.92) 0 14%, transparent 28%),
+        linear-gradient(225deg, rgba(0,0,0,.92) 0 14%, transparent 28%),
+        linear-gradient(45deg, rgba(0,0,0,.92) 0 14%, transparent 28%),
+        linear-gradient(315deg, rgba(0,0,0,.92) 0 14%, transparent 28%);
+    mix-blend-mode: multiply;
+}
+
+.btn-haki-toggle.ativado .button-thumb,
+.btn-haki-toggle.ativado span,
+.btn-haki-toggle.ativado small {
+    position: relative;
+    z-index: 2;
+}
+
+.btn-haki-toggle .button-thumb {
+    margin-left: 0;
+}
+
+/* A imagem de fundo do golpe continua sendo a própria ilustração do ataque. */
+.ataque-btn.has-button-image {
+    background-size: cover;
+    background-position: center;
+}
+
+.boss-portrait-wrap {
+    display: inline-block;
+    padding: 5px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    background: rgba(0,0,0,.22);
+}
+
+#img-boss-combate {
+    display: block;
+    width: min(420px, 100%);
+    height: 250px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+@media (max-width: 760px) {
+    .button-thumb {
+        width: 38px;
+        height: 30px;
+    }
+
+    .action-card.has-button-image {
+        min-height: 150px;
+    }
+}

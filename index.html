@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Piece: O Início</title>
+    <link rel="stylesheet" href="kingofpirates.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside id="left-panel">
+            <div class="cartaz-wanted" id="cartaz">
+                <div class="wanted-top">MARINHA • GOVERNO MUNDIAL</div>
+                <h1>WANTED</h1>
+                <div class="wanted-photo-wrap">
+                    <img id="img-personagem" src="" alt="Retrato do personagem">
+                </div>
+                <h2 id="nome-pirata">NOVATO</h2>
+                <p class="wanted-sub" id="titulo-pirata">Ainda sem uma história para contar</p>
+
+                <div class="wanted-info">
+                    <div><b>Facção</b><span id="faccao-pirata">---</span></div>
+                    <div><b>Raça</b><span id="raca-pirata">---</span></div>
+                    <div><b>Gênero</b><span id="genero-pirata">---</span></div>
+                    <div><b>Estilo</b><span id="estilo-pirata">Nenhum</span></div>
+                    <div><b>Akuma no Mi</b><span id="fruta-pirata">Nenhuma</span></div>
+                </div>
+
+                <img id="img-fruta-perfil" class="fruit-profile" src="" alt="Akuma no Mi" hidden>
+
+                <div class="haki-box">
+                    <div><span>OBS.</span><strong id="haki-obs">0</strong>/30</div>
+                    <div><span>ARM.</span><strong id="haki-arm">0</strong>/30</div>
+                    <div><span>REI</span><strong id="haki-rei">0/30</strong></div>
+                </div>
+
+                <div class="power-line">
+                    <span>PODER</span>
+                    <strong id="poder-jogador-poster">10</strong>
+                </div>
+
+                <div class="bounty-line">
+                    <small>DEAD OR ALIVE</small>
+                    <span>B$ <strong id="recompensa-pirata">0</strong></span>
+                </div>
+            </div>
+        </aside>
+
+        <main id="right-panel">
+            <header class="game-header">
+                <div>
+                    <span class="eyebrow">EAST BLUE • 1520</span>
+                    <h1>ONE PIECE: O INÍCIO</h1>
+                </div>
+                <div class="header-status">
+                    <span id="status-ilha">Vila Foosha</span>
+                    <span id="status-barco">Sem barco</span>
+                </div>
+            </header>
+
+            <div id="log-eventos" role="status">Escolha uma facção para começar sua jornada.</div>
+
+            <!-- TELA 0: CRIAÇÃO -->
+            <section id="tela-criacao" class="tela-ativa">
+                <div class="story-card opening-card">
+                    <span class="chapter">CAPÍTULO 01</span>
+                    <h2>Você acabou de sair da Vila Foosha...</h2>
+                    <p>
+                        A vila natal de Luffy fica para trás. Você ainda não tem nome, fama,
+                        barco ou a menor ideia de onde está se metendo.
+                    </p>
+                    <p class="muted">Escolha apenas a facção. O Haki do Rei é decidido pelo sistema.</p>
+                </div>
+
+                <h3 class="section-title">De que lado você vai começar?</h3>
+                <div class="faccao-grid">
+                    <button class="faccao-btn" id="btn-marinha" data-img="https://placehold.co/120x90/163c63/ffffff?text=MARINHA" onclick="escolherFaccao('Marinha')">
+                        <span class="choice-icon">⚓</span>
+                        <b>MARINHA</b>
+                        <small>Justiça e patente.</small>
+                    </button>
+                    <button class="faccao-btn" id="btn-pirata" data-img="https://placehold.co/120x90/4b1720/ffffff?text=PIRATA" onclick="escolherFaccao('Pirata')">
+                        <span class="choice-icon">☠</span>
+                        <b>PIRATA</b>
+                        <small>Liberdade e recompensa.</small>
+                    </button>
+                </div>
+
+                <button class="btn-acao btn-primary large-action" data-img="https://placehold.co/120x90/8a5a18/ffffff?text=ROLAR" onclick="criarPersonagem()">CRIAR MEU PERSONAGEM</button>
+                <p class="small-note">30% de chance do sistema decidir que você possui Haki do Rei adormecido. Você não escolhe isso.</p>
+            </section>
+
+            <!-- TELA 1: FOOSHA / BARCO -->
+            <section id="tela-barco" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">VILA FOOSHA</span>
+                    <h2>Você precisa de um barco.</h2>
+                    <p id="texto-inicio-ilha">
+                        A aventura começa oficialmente agora. O problema é a pequena parte chamada “ter uma embarcação”.
+                    </p>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-pirata">
+                    <button class="boat-card" data-img="https://placehold.co/160x100/531717/ffffff?text=ROUBAR" onclick="roubarBarco()">
+                        <img src="https://placehold.co/640x380/531717/ffffff?text=BARCO+ALEATORIO" alt="Barco para roubar">
+                        <span>Roubar um barco</span>
+                        <small>50% de chance • 1 tentativa</small>
+                    </button>
+                    <button class="boat-card" data-img="https://placehold.co/160x100/31516a/ffffff?text=VELHARIA" onclick="comprarBarco()">
+                        <img src="https://placehold.co/640x380/31516a/ffffff?text=VELHARIA+FLUTUANTE" alt="Barco barato">
+                        <span>Comprar uma velharia</span>
+                        <small>Sem falha. Só sem luxo.</small>
+                    </button>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-marinha" hidden>
+                    <button class="boat-card" data-img="https://placehold.co/160x100/173a5e/ffffff?text=BASE" onclick="receberNavioMarinha()">
+                        <img src="https://placehold.co/640x380/173a5e/ffffff?text=NAVIO+DA+MARINHA" alt="Navio da Marinha">
+                        <span>Apresentar-se à base</span>
+                        <small>Você é da Marinha. Roubar barco aqui não existe.</small>
+                    </button>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-tenryuubito" hidden>
+                    <button class="boat-card gold-card" data-img="https://placehold.co/160x100/5e4817/ffffff?text=GOVERNO" onclick="chamarNavioGoverno()">
+                        <img src="https://placehold.co/640x380/5e4817/ffffff?text=NAVIO+DO+GOVERNO" alt="Navio do Governo Mundial">
+                        <span>Chamar navio do Governo Mundial</span>
+                        <small>Privilegio nível absurdo.</small>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TELA 2: MAPA -->
+            <section id="tela-mapa" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">MAPA DE NAVEGAÇÃO</span>
+                    <h2>As ilhas que você já pisou ficam conhecidas.</h2>
+                    <p>As próximas ilhas são <strong>????</strong> até você realmente chegar nelas.</p>
+                </div>
+                <div id="rota-ilhas" class="map-route"></div>
+                <div class="button-row map-controls">
+                    <button class="btn-acao btn-primary" id="btn-proxima-ilha" data-img="https://placehold.co/120x90/6c5426/ffffff?text=SEGUIR" onclick="irParaProximaIlha()">SEGUIR A ROTA</button>
+                    <button class="btn-acao" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=ATUAL" onclick="voltarParaIlhaAtual()">VOLTAR À ILHA ATUAL</button>
+                </div>
+            </section>
+
+            <!-- TELA 3: ILHA -->
+            <section id="tela-ilha" class="tela-oculta">
+                <div class="island-banner">
+                    <div>
+                        <span class="chapter">LOCAL ATUAL</span>
+                        <h2 id="nome-ilha-atual">Vila Foosha</h2>
+                        <p id="descricao-ilha">A história ainda está começando.</p>
+                    </div>
+                    <div class="island-count">
+                        <span>BUSCAS DE AKUMA NO MI</span>
+                        <strong><span id="count-fruta">0</span>/2</strong>
+                    </div>
+                </div>
+
+                <div class="action-grid">
+                    <button class="action-card" data-img="https://placehold.co/120x90/476336/ffffff?text=FRUTA" onclick="procurarFruta()">
+                        <span class="action-icon">🍈</span>
+                        <b>PROCURAR AKUMA NO MI</b>
+                        <small>2 buscas por ilha • todas as frutas no sorteio</small>
+                    </button>
+                    <button class="action-card" data-img="https://placehold.co/120x90/26343d/ffffff?text=MESTRE" onclick="procurarEstilo()">
+                        <span class="action-icon">⚔</span>
+                        <b>PROCURAR MESTRE</b>
+                        <small>Escolha aceitar ou recusar o estilo</small>
+                    </button>
+                    <button class="action-card" id="btn-treino-obs" data-img="https://placehold.co/120x90/2f503d/ffffff?text=OBS" onclick="abrirMinigame('obs')">
+                        <span class="action-icon">👁</span>
+                        <b>TREINAR OBSERVAÇÃO</b>
+                        <small>Uma conclusão por ilha</small>
+                    </button>
+                    <button class="action-card" id="btn-treino-arm" data-img="https://placehold.co/120x90/4b3b2a/ffffff?text=ARM" onclick="abrirMinigame('arm')">
+                        <span class="action-icon">✊</span>
+                        <b>TREINAR ARMAMENTO</b>
+                        <small>Uma conclusão por ilha</small>
+                    </button>
+                    <button class="action-card" id="btn-despertar-fruta" data-img="https://placehold.co/120x90/68432f/ffffff?text=AWAKEN" onclick="despertarFruta()" hidden>
+                        <span class="action-icon">🌟</span>
+                        <b>DESPERTAR AKUMA NO MI</b>
+                        <small>Desbloqueado após derrota extrema</small>
+                    </button>
+                    <button class="action-card" data-img="https://placehold.co/120x90/3c6349/ffffff?text=ALLY" onclick="abrirAliados()">
+                        <span class="action-icon">👥</span>
+                        <b>ALIADOS / TRIPULAÇÃO</b>
+                        <small>Recrutar e oferecer frutas</small>
+                    </button>
+                </div>
+
+                <div class="split-actions">
+                    <div class="mini-card">
+                        <span class="mini-label">DESAFIO</span>
+                        <button class="btn-acao btn-primary" id="btn-boss-ilha" data-img="https://placehold.co/120x90/711d1d/ffffff?text=BOSS" onclick="iniciarBoss()">ENFRENTAR</button>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">NAVEGAÇÃO</span>
+                        <button class="btn-acao" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=MAPA" onclick="mudarTela('tela-mapa')">VOLTAR AO MAPA</button>
+                    </div>
+                </div>
+
+                <div class="story-card progression-note">
+                    <p id="texto-progressao-ilha">Explore a ilha, lute e siga a rota.</p>
+                </div>
+            </section>
+
+            <!-- TELA 4: EVENTOS -->
+            <section id="tela-evento" class="tela-oculta">
+                <div class="event-card">
+                    <span class="chapter" id="titulo-evento">EVENTO</span>
+                    <img id="img-evento" class="event-image" src="" alt="Imagem do evento">
+                    <h2 id="nome-evento">Aconteceu alguma coisa...</h2>
+                    <p id="desc-evento"></p>
+                    <div id="botoes-evento" class="button-row"></div>
+                </div>
+            </section>
+
+            <!-- TELA 5: MINIGAME -->
+            <section id="tela-minigame" class="tela-oculta">
+                <div class="training-card">
+                    <span class="chapter">TREINAMENTO</span>
+                    <h2 id="titulo-minigame">Haki</h2>
+                    <p id="instrucao-minigame"></p>
+                    <div id="timer-minigame" class="training-timer" hidden>5</div>
+
+                    <div id="nota-treino" class="training-score" hidden></div>
+
+                    <div id="obs-minigame" hidden>
+                        <div class="crosshair-stage" id="obs-stage">
+                            <div class="obs-target" id="obs-target"><span>ALVO</span></div>
+                            <div class="mc-crosshair" id="obs-crosshair"></div>
+                        </div>
+                        <div class="training-tip">ESPAÇO ou AÇÃO quando a mira estiver sobre o alvo.</div>
+                    </div>
+
+                    <div id="arm-minigame" hidden>
+                        <div class="heavy-stage">
+                            <div class="heavy-zone" id="arm-zone"></div>
+                            <div class="heavy-needle" id="arm-needle"></div>
+                        </div>
+                        <div class="heavy-meter-labels"><span>0</span><span>FORÇA</span><span>100</span></div>
+                        <div class="training-tip">SEGURE ESPAÇO / AÇÃO para empurrar a agulha pesada. Solte na zona verde.</div>
+                    </div>
+
+                    <div class="button-row training-controls">
+                        <button class="btn-acao btn-primary" id="btn-acao-minigame" data-img="https://placehold.co/120x90/4e6832/ffffff?text=ACAO" onmousedown="acaoMinigameDown(event)" onmouseup="acaoMinigameUp()" ontouchstart="acaoMinigameDown(event)" ontouchend="acaoMinigameUp()">AÇÃO</button>
+                        <button class="btn-acao" id="btn-tentar-novamente" data-img="https://placehold.co/120x90/5f4a27/ffffff?text=RETRY" onclick="recomecarMinigame()" hidden>TENTAR NOVAMENTE</button>
+                        <button class="btn-acao" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=SAIR" onclick="fecharMinigame()">VOLTAR</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TELA 6: ALIADOS -->
+            <section id="tela-aliados" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">TRIPULAÇÃO</span>
+                    <h2>Quem está no seu barco?</h2>
+                    <p>Cada aliado pode atacar em batalhas onde isso for permitido.</p>
+                </div>
+
+                <div class="ally-toolbar">
+                    <button class="btn-acao btn-primary" id="btn-procurar-aliado" data-img="https://placehold.co/120x90/3c6349/ffffff?text=BUSCAR" onclick="procurarAliado()">PROCURAR ALIADO</button>
+                    <span id="contador-tripulacao">Tripulação: 0</span>
+                </div>
+
+                <div id="lista-aliados" class="ally-list"></div>
+                <div id="lista-inventario-frutas" class="fruit-inventory"></div>
+
+                <button class="btn-acao" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=VOLTAR" onclick="mudarTela('tela-ilha')">VOLTAR PARA ILHA</button>
+            </section>
+
+            <!-- TELA 7: COMBATE -->
+            <section id="tela-combate" class="tela-oculta">
+                <div class="battle-head">
+                    <span class="chapter">BATALHA</span>
+                    <div class="boss-portrait-wrap">
+                        <img id="img-boss-combate" src="" alt="Foto do boss">
+                    </div>
+                    <h2><span id="nome-boss">BOSS</span></h2>
+                    <p>Poder do jogador: <strong id="poder-combate-jogador">0</strong> • Poder do inimigo: <strong id="poder-combate-boss">0</strong></p>
+                </div>
+
+                <div class="battle-status">
+                    <div class="fighter-panel player-panel">
+                        <div class="fighter-title">VOCÊ</div>
+                        <div class="hp-number"><span id="hp-jogador">120</span> / <span id="hp-max-jogador">120</span></div>
+                        <div class="hp-bar"><span id="barra-hp-jogador"></span></div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="fighter-panel boss-panel">
+                        <div class="fighter-title" id="nome-boss-status">BOSS</div>
+                        <div class="hp-number"><span id="hp-boss">0</span> / <span id="hp-boss-max">0</span></div>
+                        <div class="hp-bar boss-bar"><span id="barra-hp-boss"></span></div>
+                    </div>
+                </div>
+
+                <div class="combat-haki">
+                    <button id="btn-buff-arm" class="btn-haki-toggle" data-img="https://placehold.co/120x90/171717/ffffff?text=ARM" onclick="toggleHakiArmamento()">
+                        <span>✊ ARMAMENTO</span>
+                        <small>DESLIGADO • Fortalece seus golpes</small>
+                    </button>
+                    <button id="btn-buff-obs" class="btn-haki-toggle" data-img="https://placehold.co/120x90/263b2d/ffffff?text=OBS" onclick="toggleHakiObservacao()">
+                        <span>👁 OBSERVAÇÃO</span>
+                        <small>DESLIGADO • Aumenta sua esquiva</small>
+                    </button>
+                    <button id="btn-buff-rei" class="btn-haki-toggle" data-img="https://placehold.co/120x90/4c3d19/ffffff?text=REI" onclick="toggleHakiRei()" hidden>
+                        <span>👑 HAKI DO REI</span>
+                        <small>DESLIGADO • Pressão do conquistador</small>
+                    </button>
+                </div>
+
+                <div id="log-batalha" class="battle-log">O inimigo observa você. Faça seu movimento.</div>
+
+                <div class="attack-section">
+                    <div class="attack-group-title">ATAQUES</div>
+                    <div id="painel-ataques" class="attack-grid"></div>
+                </div>
+
+                <div id="painel-aliados-batalha" class="battle-allies" hidden>
+                    <div class="attack-group-title">ATAQUES DOS ALIADOS</div>
+                    <div id="lista-ataques-aliados" class="attack-grid"></div>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-acao" id="btn-sair-batalha" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=SAIR" onclick="sairDaBatalha()">VOLTAR PARA ILHA</button>
+                    <button class="btn-acao btn-danger" id="btn-reiniciar-batalha" data-img="https://placehold.co/120x90/5b1d25/ffffff?text=RESET" onclick="reiniciarJornada()" hidden>REINICIAR JORNADA</button>
+                </div>
+            </section>
+
+            <!-- GAME OVER -->
+            <section id="tela-gameover" class="tela-oculta">
+                <div class="gameover-card">
+                    <div class="gameover-skull">☠</div>
+                    <h2>FIM DE JOGO</h2>
+                    <p id="texto-gameover">Sua jornada acabou.</p>
+                    <button class="btn-acao btn-danger" data-img="https://placehold.co/120x90/5b1d25/ffffff?text=RECOMECAR" onclick="reiniciarJornada()">RECOMEÇAR DO ZERO</button>
+                </div>
+            </section>
+
+            <!-- TELA NAVEGAÇÃO -->
+            <section id="tela-navegacao" class="tela-oculta">
+                <div class="sailing-card">
+                    <div class="wave-loader"><span></span><span></span><span></span></div>
+                    <h2 id="texto-navegando">NAVEGANDO</h2>
+                    <p id="subtexto-navegando">O mar está decidindo se hoje você vai ter paz.</p>
+                </div>
+            </section>
+
+            <!-- EVENTO NO MAR / TRAVESSIA ESPECIAL -->
+            <section id="tela-evento-mar" class="tela-oculta">
+                <div class="event-card sea-event">
+                    <span class="chapter">TRAVESSIA</span>
+                    <div id="imagem-evento-mar" class="sea-monster">🌊</div>
+                    <h2 id="titulo-evento-mar">EVENTO NO MAR</h2>
+                    <p id="desc-evento-mar"></p>
+                    <div id="acoes-evento-mar" class="button-row"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="tesouro.js"></script>
+</body>
+</html>

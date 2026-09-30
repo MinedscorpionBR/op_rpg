@@ -1,6 +1,6 @@
 // ============================================================
 // ONE PIECE: O INÍCIO
-// JavaScript separado para usar com index.html + CSS externo.
+// Motor do RPG. Estrutura preservada, progressão expandida.
 // ============================================================
 
 const jogador = {
@@ -13,11 +13,14 @@ const jogador = {
     genero: '',
     faccao: '',
     recompensa: 0,
+    patente: 'Recruta',
     haki: {
         obs: 0,
         arm: 0,
-        rei: false,
+        rei: false,              // IMPORTANTE: o sistema decide. Nunca é escolhido pelo jogador.
         reiEstado: 'Não possui',
+        reiValor: 0,
+        reiMax: 30,
         obsAvancado: false,
         armAvancado: false
     },
@@ -27,77 +30,36 @@ const jogador = {
     maestriaFruta: 0,
     inventario: [],
     aliados: [],
-    treinamentos: {
-        obs: 0,
-        arm: 0,
-        estilo: 0
-    }
+    treinamentos: {},
+    ilhaIndex: 0,
+    frutaPodeDespertar: false,
+    semSombra: false,
+    barcoTipo: '',
+    emJornada: true
 };
 
-const ilhaAtual = {
-    nome: '',
-    frutaBuscas: 2,
-    frutaChance: 0.35,
-    estiloBuscaDisponivel: true,
-    aliadoBuscaDisponivel: true
+const estado = {
+    barcoConseguido: false,
+    tentativasRoubo: 0,
+    ilhaIndex: 0,
+    bossIndex: 0,
+    bossHP: 0,
+    bossAtivo: null,
+    ataqueEmAndamento: false,
+    hakiArmAtivo: false,
+    hakiObsAtivo: false,
+    hakiReiAtivo: false,
+    aliadoAtacou: false,
+    eventoPendente: null,
+    cactusResolvido: false,
+    travessiaResolvida: false
 };
-
-let barcoConseguido = false;
-let tentativasRoubo = 0;
-let bossAtivo = false;
-let bossDerrotado = false;
-let bossHP = 200;
-const bossHPMax = 200;
-const bossPower = 25;
-
-let hakiArmAtivo = false;
-let hakiObsAtivo = false;
-let ataqueEmAndamento = false;
-
-// Estado dos minigames
-let minigameLoop = null;
-let minigameAtivo = false;
-let mgTipo = '';
-let mgPos = 0;
-let mgDir = 1;
-let mgTargetPos = 320;
-let segurandoArm = false;
-let tempoArmamento = 5;
-let intervaloTimer = null;
-
-// ------------------------------------------------------------
-// DADOS DO MUNDO
-// ------------------------------------------------------------
 
 const racas = [
-    {
-        nome: 'Humano',
-        bonusPoder: 0,
-        bonusObs: 0,
-        bonusArm: 0,
-        descricao: 'Versátil e sem uma fraqueza racial específica.'
-    },
-    {
-        nome: 'Mink',
-        bonusPoder: 4,
-        bonusObs: 1,
-        bonusArm: 0,
-        descricao: 'Reflexos rápidos e afinidade natural com velocidade.'
-    },
-    {
-        nome: 'Homem-Peixe',
-        bonusPoder: 7,
-        bonusObs: 0,
-        bonusArm: 1,
-        descricao: 'Força física acima da média e talento com Karatê dos Homens-Peixe.'
-    },
-    {
-        nome: 'Lunaria',
-        bonusPoder: 9,
-        bonusObs: 0,
-        bonusArm: 1,
-        descricao: 'Resistência monstruosa e enorme potencial físico.'
-    }
+    { nome: 'Humano', bonusPoder: 0, descricao: 'Versátil e sem uma fraqueza racial específica.' },
+    { nome: 'Mink', bonusPoder: 4, descricao: 'Reflexos rápidos e muita velocidade.' },
+    { nome: 'Homem-Peixe', bonusPoder: 7, descricao: 'Força física elevada e afinidade com Karatê dos Homens-Peixe.' },
+    { nome: 'Lunaria', bonusPoder: 9, descricao: 'Resistência e potencial físico monstruosos.' }
 ];
 
 const generos = ['Macho', 'Fêmea'];
@@ -106,388 +68,348 @@ const estilos = [
     {
         nome: 'Santoryu',
         descricao: 'O caminho das três espadas.',
-        img: 'https://placehold.co/600x400/1b2633/ffffff?text=SANTORYU',
-        requisitosEspecial: [],
+        img: img('SANTORYU', '1b2633'),
         ataques: [
-            {
-                nome: 'Tatsu Maki',
-                dano: 30,
-                req: 1,
-                img: 'https://placehold.co/700x500/253646/ffffff?text=TATSU+MAKI'
-            },
-            {
-                nome: 'Shi Shison Son',
-                dano: 43,
-                req: 4,
-                img: 'https://placehold.co/700x500/161c25/ffffff?text=SHI+SHISON+SON'
-            }
+            ataque('Tatsu Maki', 34, 1, 'TATSU+MAKI', '253646'),
+            ataque('Shi Shison Son', 50, 4, 'SHI+SHISON+SON', '161c25')
         ]
     },
     {
         nome: 'Perna Negra',
         descricao: 'Chutes absurdos, elegância e incêndio ocasional.',
-        img: 'https://placehold.co/600x400/402b1f/ffffff?text=PERNA+NEGRA',
-        requisitosEspecial: [],
+        img: img('PERNA+NEGRA', '402b1f'),
         ataques: [
-            {
-                nome: 'Diable Jambe',
-                dano: 36,
-                req: 1,
-                img: 'https://placehold.co/700x500/4a1f18/ffffff?text=DIABLE+JAMBE'
-            },
-            {
-                nome: 'Concassé',
-                dano: 46,
-                req: 4,
-                img: 'https://placehold.co/700x500/2b2020/ffffff?text=CONCASSE'
-            }
+            ataque('Diable Jambe', 39, 1, 'DIABLE+JAMBE', '4a1f18'),
+            ataque('Concassé', 53, 4, 'CONCASSE', '2b2020')
         ]
     },
     {
         nome: 'Rokushiki',
         descricao: 'Técnicas secretas da Marinha e do Governo.',
-        img: 'https://placehold.co/600x400/172d3f/ffffff?text=ROKUSHIKI',
-        requisitosEspecial: [],
+        img: img('ROKUSHIKI', '172d3f'),
         ataques: [
-            {
-                nome: 'Shigan',
-                dano: 28,
-                req: 1,
-                img: 'https://placehold.co/700x500/263949/ffffff?text=SHIGAN'
-            },
-            {
-                nome: 'Rankyaku',
-                dano: 49,
-                req: 4,
-                img: 'https://placehold.co/700x500/24313b/ffffff?text=RANKYAKU'
-            }
+            ataque('Shigan', 31, 1, 'SHIGAN', '263949'),
+            ataque('Rankyaku', 56, 4, 'RANKYAKU', '24313b')
         ]
     },
     {
         nome: 'Ittoryu',
         descricao: 'Uma espada, um objetivo e zero espaço para hesitar.',
-        img: 'https://placehold.co/600x400/26343d/ffffff?text=ITTORYU',
-        requisitosEspecial: [],
+        img: img('ITTORYU', '26343d'),
         ataques: [
-            {
-                nome: 'Iai: Shishi Sonson',
-                dano: 34,
-                req: 1,
-                img: 'https://placehold.co/700x500/1c2a31/ffffff?text=SHISHI+SONSON'
-            },
-            {
-                nome: 'Rengoku',
-                dano: 45,
-                req: 4,
-                img: 'https://placehold.co/700x500/3a2521/ffffff?text=RENGOKU'
-            }
+            ataque('Iai: Shishi Sonson', 37, 1, 'SHISHI+SONSON', '1c2a31'),
+            ataque('Rengoku', 55, 4, 'RENGOKU', '3a2521')
         ]
     },
     {
         nome: 'Karatê dos Homens-Peixe',
-        descricao: 'Manipulação da água no próprio corpo e ao redor.',
-        img: 'https://placehold.co/600x400/153c4c/ffffff?text=FISHMAN+KARATE',
-        requisitosEspecial: ['bloqueadoComFruta'],
+        descricao: 'Manipulação da água e golpes devastadores.',
+        img: img('FISHMAN+KARATE', '153c4c'),
+        bloqueadoComFruta: true,
         ataques: [
-            {
-                nome: 'Samegawara Seiken',
-                dano: 31,
-                req: 1,
-                img: 'https://placehold.co/700x500/16485c/ffffff?text=SAMEGAWARA'
-            },
-            {
-                nome: 'Kaimen Wari',
-                dano: 48,
-                req: 4,
-                img: 'https://placehold.co/700x500/0f3342/ffffff?text=KAIMEN+WARI'
-            }
+            ataque('Samegawara Seiken', 35, 1, 'SAMEGAWARA', '16485c'),
+            ataque('Kaimen Wari', 57, 4, 'KAIMEN+WARI', '0f3342')
         ]
     },
     {
         nome: 'Kung Fu',
         descricao: 'Estilo marcial versátil e direto.',
-        img: 'https://placehold.co/600x400/2f4029/ffffff?text=KUNG+FU',
-        requisitosEspecial: [],
+        img: img('KUNG+FU', '2f4029'),
         ataques: [
-            {
-                nome: 'Golpe Meteoro',
-                dano: 29,
-                req: 1,
-                img: 'https://placehold.co/700x500/293b2b/ffffff?text=METEORO'
-            },
-            {
-                nome: 'Rajada Giratória',
-                dano: 44,
-                req: 4,
-                img: 'https://placehold.co/700x500/313b26/ffffff?text=RAJADA+GIRATORIA'
-            }
+            ataque('Golpe Meteoro', 32, 1, 'METEORO', '293b2b'),
+            ataque('Rajada Giratória', 51, 4, 'RAJADA+GIRATORIA', '313b26')
         ]
     }
 ];
+
+function ataque(nome, dano, req, texto, fundo) {
+    return {
+        nome,
+        dano,
+        req,
+        img: img(texto, fundo)
+    };
+}
 
 const frutas = [
-    {
-        nome: 'Bara Bara no Mi',
-        raridade: 'Comum',
-        peso: 26,
-        poder: 7,
-        img: 'https://i.pinimg.com/736x/87/b1/ea/87b1ea08ce3879a7852c0cd69cf16c73.jpg',
-        ataques: [
-            {
-                nome: 'Bara Bara: Chop',
-                dano: 35,
-                req: 0,
-                img: 'https://placehold.co/700x500/4b334d/ffffff?text=BARA+BARA+CHOP'
-            },
-            {
-                nome: 'Bara Bara: Buzzsaw',
-                dano: 54,
-                req: 3,
-                img: 'https://placehold.co/700x500/403040/ffffff?text=BARA+BARA+BUZZSAW'
-            }
-        ]
-    },
-
-    {
-        nome: 'Sube Sube no Mi',
-        raridade: 'Comum',
-        peso: 19,
-        poder: 9,
-        img: 'https://placehold.co/500x500/d6b0cf/1a121a?text=SUBE+SUBE',
-        ataques: [
-            {
-                nome: 'Corpo Escorregadio',
-                dano: 33,
-                req: 0,
-                img: 'https://placehold.co/700x500/6f526f/ffffff?text=ESCORREGADIO'
-            },
-            {
-                nome: 'Deslize Brutal',
-                dano: 51,
-                req: 3,
-                img: 'https://placehold.co/700x500/5b425b/ffffff?text=DESLIZE+BRUTAL'
-            }
-        ]
-    },
-
-    {
-        nome: 'Gomu Gomu no Mi',
-        raridade: 'Rara',
-        peso: 13,
-        poder: 18,
-        img: 'https://placehold.co/500x500/9b5a36/ffffff?text=GOMU+GOMU',
-        ataques: [
-            {
-                nome: 'Gomu Gomu no Pistol',
-                dano: 42,
-                req: 0,
-                img: 'https://placehold.co/700x500/5a3827/ffffff?text=JET+PISTOL'
-            },
-            {
-                nome: 'Gomu Gomu no Elephant Gun',
-                dano: 78,
-                req: 4,
-                img: 'https://placehold.co/700x500/3d2b20/ffffff?text=ELEPHANT+GUN'
-            }
-        ]
-    },
-
-    {
-        nome: 'Mera Mera no Mi',
-        raridade: 'Rara',
-        peso: 8,
-        poder: 24,
-        img: 'https://placehold.co/500x500/b43a22/ffffff?text=MERA+MERA',
-        ataques: [
-            {
-                nome: 'Hiken',
-                dano: 55,
-                req: 0,
-                img: 'https://placehold.co/700x500/5a1f17/ffffff?text=HIKEN'
-            },
-            {
-                nome: 'Higan',
-                dano: 86,
-                req: 4,
-                img: 'https://placehold.co/700x500/7a291c/ffffff?text=HIGAN'
-            }
-        ]
-    },
-
-    {
-        nome: 'Mochi Mochi no Mi',
-        raridade: 'Rara',
-        peso: 7,
-        poder: 28,
-        img: 'https://placehold.co/500x500/d79a6f/241711?text=MOCHI+MOCHI',
-        ataques: [
-            {
-                nome: 'Mochi Gatling',
-                dano: 58,
-                req: 0,
-                img: 'https://placehold.co/700x500/614436/ffffff?text=MOCHI+GATLING'
-            },
-            {
-                nome: 'Mochi Buzzcut',
-                dano: 92,
-                req: 4,
-                img: 'https://placehold.co/700x500/4c352c/ffffff?text=MOCHI+BUZZCUT'
-            }
-        ]
-    },
-
-    {
-        nome: 'Hie Hie no Mi',
-        raridade: 'Lendária',
-        peso: 4,
-        poder: 38,
-        img: 'https://placehold.co/500x500/7fc8ef/0f2330?text=HIE+HIE',
-        ataques: [
-            {
-                nome: 'Ice Saber',
-                dano: 70,
-                req: 0,
-                img: 'https://placehold.co/700x500/355c71/ffffff?text=ICE+SABER'
-            },
-            {
-                nome: 'Ice Time',
-                dano: 112,
-                req: 4,
-                img: 'https://placehold.co/700x500/223f4f/ffffff?text=ICE+TIME'
-            }
-        ]
-    },
-
-    {
-        nome: 'Yami Yami no Mi',
-        raridade: 'Lendária',
-        peso: 3,
-        poder: 43,
-        img: 'https://placehold.co/500x500/241c35/ffffff?text=YAMI+YAMI',
-        ataques: [
-            {
-                nome: 'Kurouzu',
-                dano: 74,
-                req: 0,
-                img: 'https://placehold.co/700x500/241d2f/ffffff?text=KUROUZU'
-            },
-            {
-                nome: 'Black Hole',
-                dano: 124,
-                req: 4,
-                img: 'https://placehold.co/700x500/100e15/ffffff?text=BLACK+HOLE'
-            }
-        ]
-    },
-
-    {
-        nome: 'Fruta Zoan Mítica: Modelo Raro',
-        raridade: 'Mítica',
-        peso: 1,
-        poder: 60,
-        img: 'https://placehold.co/500x500/6d4d9b/ffffff?text=ZOAN+MITICA',
-        ataques: [
-            {
-                nome: 'Forma Mítica',
-                dano: 92,
-                req: 0,
-                img: 'https://placehold.co/700x500/483167/ffffff?text=FORMA+MITICA'
-            },
-            {
-                nome: 'Rugido Celestial',
-                dano: 150,
-                req: 4,
-                img: 'https://placehold.co/700x500/322143/ffffff?text=RUGIDO+CELESTIAL'
-            }
-        ]
-    }
+    fruta('Bara Bara no Mi', 'Comum', 45, 7, '87b1ea', [
+        ataque('Bara Bara: Chop', 35, 0, 'BARA+BARA+CHOP', '4b334d'),
+        ataque('Bara Bara: Buzzsaw', 54, 3, 'BARA+BARA+BUZZSAW', '403040')
+    ]),
+    fruta('Sube Sube no Mi', 'Comum', 38, 9, 'd6b0cf', [
+        ataque('Corpo Escorregadio', 33, 0, 'ESCORREGADIO', '6f526f'),
+        ataque('Deslize Brutal', 51, 3, 'DESLIZE+BRUTAL', '5b425b')
+    ]),
+    fruta('Gomu Gomu no Mi', 'Rara', 12, 18, '9b5a36', [
+        ataque('Gomu Gomu no Pistol', 42, 0, 'JET+PISTOL', '5a3827'),
+        ataque('Gomu Gomu no Elephant Gun', 78, 4, 'ELEPHANT+GUN', '3d2b20')
+    ]),
+    fruta('Mera Mera no Mi', 'Rara', 8, 24, 'b43a22', [
+        ataque('Hiken', 55, 0, 'HIKEN', '5a1f17'),
+        ataque('Higan', 86, 4, 'HIGAN', '7a291c')
+    ]),
+    fruta('Mochi Mochi no Mi', 'Rara', 7, 28, 'd79a6f', [
+        ataque('Mochi Gatling', 58, 0, 'MOCHI+GATLING', '614436'),
+        ataque('Mochi Buzzcut', 92, 4, 'MOCHI+BUZZCUT', '4c352c')
+    ]),
+    fruta('Hie Hie no Mi', 'Lendária', 2.6, 38, '7fc8ef', [
+        ataque('Ice Saber', 70, 0, 'ICE+SABER', '355c71'),
+        ataque('Ice Time', 112, 4, 'ICE+TIME', '223f4f')
+    ]),
+    fruta('Yami Yami no Mi', 'Lendária', 1.5, 43, '241c35', [
+        ataque('Kurouzu', 74, 0, 'KUROUZU', '241d2f'),
+        ataque('Black Hole', 124, 4, 'BLACK+HOLE', '100e15')
+    ]),
+    fruta('Fruta Zoan Mítica: Modelo Raro', 'Mítica', 0.4, 60, '6d4d9b', [
+        ataque('Forma Mítica', 92, 0, 'FORMA+MITICA', '483167'),
+        ataque('Rugido Celestial', 150, 4, 'RUGIDO+CELESTIAL', '322143')
+    ])
 ];
 
+function fruta(nome, raridade, peso, poder, cor, ataques) {
+    return {
+        nome,
+        raridade,
+        peso,
+        poder,
+        img: img(nome.toUpperCase().replaceAll(' ', '+'), cor, 500, 500),
+        ataques,
+        despertada: false
+    };
+}
+
 const nomesAliados = [
-    'Mestre das Panelas',
-    'Caçadora de Tesouros',
-    'Atirador Desastrado',
-    'Espadachim Perdido',
-    'Médica Improvisada',
-    'Cozinheiro Rabugento',
-    'Navegador de Quinta',
-    'Mecânico do Porto'
+    'Mestre das Panelas', 'Caçadora de Tesouros', 'Atirador Desastrado',
+    'Espadachim Perdido', 'Médica Improvisada', 'Cozinheiro Rabugento',
+    'Navegador de Quinta', 'Mecânico do Porto', 'Carpinteiro de Water 7',
+    'Gigante do Novo Mundo', 'Homem-Peixe do Farol'
 ];
 
 const imagensPorPerfil = {
-    'Humano-Macho':
-        'https://i.pinimg.com/736x/8e/31/53/8e315351a0210e74f2ee9ea9bb094d48.jpg',
-
-    'Humano-Fêmea':
-        'https://i.pinimg.com/736x/8c/d7/24/8cd724be4c1946c59cdcf3a7ba634f1e.jpg',
-
-    'Mink-Macho':
-        'https://i.pinimg.com/736x/7d/5e/51/7d5e51cd459d81d234563aab708f5dcb.jpg',
-
-    'Mink-Fêmea':
-        'https://i.pinimg.com/736x/70/4e/4f/704e4fe514c622a571c4566f1e600ef9.jpg',
-
-    'Homem-Peixe-Macho':
-        'https://i.pinimg.com/736x/28/90/19/289019b788647a7493a749eb403d169e.jpg',
-
-    'Homem-Peixe-Fêmea':
-        'https://placehold.co/700x500/1e5661/ffffff?text=HOMEM-PEIXE+FEMEA',
-
-    'Lunaria-Macho':
-        'https://i.pinimg.com/736x/ec/5c/ec/ec5cecc98c92b2d075f1a54722513ba6.jpg',
-
-    'Lunaria-Fêmea':
-        'https://placehold.co/700x500/482d50/ffffff?text=LUNARIA+FEMEA',
-
-    'Tenryuubito-Macho':
-        'https://placehold.co/700x500/786127/ffffff?text=TENRYUUBITO',
-
-    'Tenryuubito-Fêmea':
-        'https://placehold.co/700x500/786127/ffffff?text=TENRYUUBITO'
+    'Humano-Macho': 'https://i.pinimg.com/736x/8e/31/53/8e315351a0210e74f2ee9ea9bb094d48.jpg',
+    'Humano-Fêmea': 'https://i.pinimg.com/736x/8c/d7/24/8cd724be4c1946c59cdcf3a7ba634f1e.jpg',
+    'Mink-Macho': 'https://i.pinimg.com/736x/7d/5e/51/7d5e51cd459d81d234563aab708f5dcb.jpg',
+    'Mink-Fêmea': 'https://i.pinimg.com/736x/70/4e/4f/704e4fe514c622a571c4566f1e600ef9.jpg',
+    'Homem-Peixe-Macho': 'https://i.pinimg.com/736x/28/90/19/289019b788647a7493a749eb403d169e.jpg',
+    'Homem-Peixe-Fêmea': img('HOMEM-PEIXE+FEMEA', '1e5661'),
+    'Lunaria-Macho': 'https://i.pinimg.com/736x/ec/5c/ec/ec5cecc98c92b2d075f1a54722513ba6.jpg',
+    'Lunaria-Fêmea': img('LUNARIA+FEMEA', '482d50'),
+    'Tenryuubito-Macho': img('TENRYUUBITO', '786127'),
+    'Tenryuubito-Fêmea': img('TENRYUUBITO', '786127')
 };
 
-const aliadosBase = [
-    {
-        nome: 'Navegador da Praia',
-        poder: 5,
-        chanceFruta: 0.55
-    },
-    {
-        nome: 'Caçadora de Relíquias',
-        poder: 7,
-        chanceFruta: 0.65
-    },
-    {
-        nome: 'Espadachim Sem Mapa',
-        poder: 9,
-        chanceFruta: 0.50
-    },
-    {
-        nome: 'Médico de Taverna',
-        poder: 6,
-        chanceFruta: 0.75
-    },
-    {
-        nome: 'Cozinheiro Fugitivo',
-        poder: 8,
-        chanceFruta: 0.40
-    }
+// ============================================================
+// ROTA DE ILHAS
+// ============================================================
+
+const ilhas = [
+    ilha('Vila Foosha', 'A saída oficial da aventura.', 0, []),
+    ilha('Yotsuba', 'A cidade do Capitão Morgan. Primeiro passo fora de Foosha.', 0.08, [
+        boss('Morgan', 220, 30, 25000, 'MORGAN', false)
+    ]),
+    ilha('Orange Town', 'A cidade sendo aterrorizada pelo palhaço Buggy.', 0.15, [
+        boss('Buggy, O Palhaço', 260, 42, 45000, 'BUGGY', false)
+    ]),
+    ilha('Baratie', 'Restaurante flutuante. Don Krieg resolveu aparecer procurando confusão.', 0.18, [
+        boss('Don Krieg', 420, 58, 90000, 'DON+KRIEG', true)
+    ], { carpinteiros: 0.05 }),
+    ilha('Ilha Conomi', 'Uma parada costeira com clima de East Blue e pouca paz.', 0.17, []),
+    ilha('Loguetown', 'A cidade da execução. Smoker espera por você.', 0.22, [
+        boss('Smoker', 560, 76, 130000, 'SMOKER', false, { requerHaki: true })
+    ]),
+    ilha('Cactus Island', 'Uma ilha festeira onde a diversão esconde uma armadilha militar.', 0.2, [], { evento: 'cactus' }),
+    ilha('Little Garden', 'Dinossauros, gigantismo e uma reunião nada amigável.', 0.25, [
+        boss('Mr. 3', 600, 85, 160000, 'MR+3', true),
+        boss('Miss Goldenweek', 360, 60, 90000, 'MISS+GOLDENWEEK', true),
+        boss('Mr. 5', 580, 82, 140000, 'MR+5', true),
+        boss('Miss Valentine', 500, 78, 120000, 'MISS+VALENTINE', true)
+    ]),
+    ilha('Drum', 'Montanhas de neve. Wapol decidiu ser o problema local.', 0.22, [
+        boss('Wapol', 720, 100, 190000, 'WAPOL', true)
+    ]),
+    ilha('Alabasta', 'O deserto. Entrar no desafio aqui é cair exatamente na armadilha anunciada.', 0.3, [
+        boss('Crocodile', 1050, 135, 300000, 'CROCODILE', true)
+    ], { evento: 'alabasta-trap' }),
+    ilha('Jaya', 'Uma parada curta antes de uma viagem completamente fora da curva.', 0.28, []),
+    ilha('Skypiea', 'Você foi jogado para o céu. A rota normal foi oficialmente cancelada.', 0.42, [
+        boss('Ohm', 850, 120, 210000, 'OHM', true),
+        boss('Satori', 760, 110, 190000, 'SATORI', true),
+        boss('Shura', 900, 125, 220000, 'SHURA', true),
+        boss('Gedatsu', 880, 122, 215000, 'GEDATSU', true),
+        boss('Enel', 1900, 240, 520000, 'ENEL', true)
+    ], { aliadoChance: 0.8 }),
+    ilha('Water 7', 'Você desce do céu e encontra Franky oferecendo uma embarcação muito melhor.', 0.36, [], { evento: 'water7', carpinteiros: 0.8 }),
+    ilha('Thriller Bark', 'O navio-ilha de Gecko Moria. Aqui derrota significa perder a sombra.', 0.3, [
+        boss('Gecko Moria', 1650, 190, 600000, 'GECKO+MORIA', true, { perdeSombra: true })
+    ]),
+    ilha('Sabaody', 'Sem boss. Só um jornal e uma notícia grande demais.', 0.34, [], { evento: 'sabaody' }),
+    ilha('Marineford', 'Guerra total. Seu lado muda completamente os adversários.', 0.36, [
+        boss('Aokiji (Kuzan)', 2400, 330, 900000, 'AOKIJI+KUZAN', true),
+        boss('Akainu (Sakazuki)', 2700, 360, 1000000, 'AKAINU', true),
+        boss('Kizaru (Borsalino)', 2600, 350, 950000, 'KIZARU', true),
+        boss('Barba Branca', 3000, 390, 1100000, 'BARBA+BRANCA', true),
+        boss('Marco', 2200, 300, 800000, 'MARCO', true),
+        boss('Ace libertado das algemas de Kairosek', 1700, 220, 700000, 'ACE', true)
+    ], { faccaoBoss: 'Pirata' }),
+    ilha('Ilha dos Homens-Peixe', 'O fundo do mar. Quase todo aliado encontrado aqui será Homem-Peixe.', 0.4, [
+        boss('Roddy Jones', 2200, 300, 900000, 'RODDY+JONES', true),
+        boss('Decken', 1950, 280, 780000, 'VANDER+DECKEN', true)
+    ], { homemPeixeAliado: 0.999, estiloFishman: true }),
+    ilha('Punk Hazard', 'O Log Pose aponta para cá. Caesar está no caminho.', 0.38, [
+        boss('Caesar', 2100, 315, 1000000, 'CAESAR', true, { requerHaki: true })
+    ]),
+    ilha('Dressrosa', 'O reino do Doflamingo e do sujeito do NEEE.', 0.45, [
+        boss('Bellamy', 1900, 265, 650000, 'BELLAMY', true),
+        boss('Doflamingo', 3600, 430, 1600000, 'DOFLAMINGO', true)
+    ]),
+    ilha('Zou', 'Uma parada muito mais tranquila. O elefante segue seu próprio ritmo.', 0.4, []),
+    ilha('Totto Land', 'Você veio para estragar o casamento de Pudding e acabou preso com Katakuri.', 0.5, [
+        boss('Katakuri', 4100, 500, 2000000, 'KATAKURI', true, { extremo: true })
+    ], { evento: 'pudding' }),
+    ilha('Wano', 'Onigashima, espadas, frutas boas e o abismo de poder chamado Kaido.', 0.62, [
+        boss('Kaido', 9500, 800, 3500000, 'KAIDO', true, { extremo: true, despertarRei: true })
+    ], { espadas: 0.8 }),
+    ilha('Egghead', 'O laboratório do futuro. O papel muda conforme sua facção.', 0.58, [
+        boss('Rob Lucci', 3800, 480, 1800000, 'ROB+LUCCI', true),
+        boss('Kizaru', 4600, 560, 2300000, 'KIZARU', true),
+        boss('Mars', 5200, 620, 2600000, 'MARS', true),
+        boss('Warcury', 5600, 660, 2800000, 'WARCURY', true),
+        boss('Peter', 5400, 640, 2700000, 'PETER', true),
+        boss('Nosjuro', 5300, 650, 2750000, 'NOSJURO', true),
+        boss('Saturn', 6000, 720, 3200000, 'SATURN', true)
+    ], { evento: 'egghead', faccaoMarinha: 'vegapunks' }),
+    ilha('Elbaf', 'Gigantes, uma última sequência de batalhas e o fim da linha.', 0.55, [
+        boss('Imu no corpo da Gunko', 8500, 760, 4500000, 'IMU+GUNKO', true, { extremo: true }),
+        boss('Imu', 14000, 1100, 8000000, 'IMU', true, { extremo: true, final: true })
+    ], { aliadoGigante: 0.85 })
 ];
 
-// ------------------------------------------------------------
+function ilha(nome, descricao, frutaChance, bosses = [], options = {}) {
+    return {
+        nome,
+        descricao,
+        frutaChance,
+        bosses: Array.isArray(bosses) ? bosses : [],
+        options: options || {},
+        buscasFruta: 2,
+        estiloBuscaDisponivel: true
+    };
+}
+
+function boss(nome, hp, poder, recompensa, textoImg, temAliados = false, extras = {}) {
+    return {
+        nome,
+        hp,
+        hpMax: hp,
+        poder,
+        recompensa,
+        img: img(textoImg, '3a2020', 500, 360),
+        temAliados,
+        extremo: Boolean(extras.extremo),
+        requerHaki: Boolean(extras.requerHaki),
+        perdeSombra: Boolean(extras.perdeSombra),
+        despertarRei: Boolean(extras.despertarRei),
+        final: Boolean(extras.final)
+    };
+}
+
+function bossGrupo(lista, nome = 'Grupo inimigo') {
+    return {
+        nome,
+        hp: lista.reduce((s, b) => s + Math.floor(b.hp * 0.55), 0),
+        hpMax: lista.reduce((s, b) => s + Math.floor(b.hp * 0.55), 0),
+        poder: Math.max(...lista.map(b => b.poder)),
+        recompensa: lista.reduce((s, b) => s + b.recompensa, 0),
+        img: img(nome.toUpperCase().replaceAll(' ', '+'), '4a2929', 500, 360),
+        temAliados: true,
+        extremo: false,
+        requerHaki: false,
+        perdeSombra: false,
+        despertarRei: false,
+        final: false,
+        membros: lista
+    };
+}
+
+// ============================================================
 // UTILITÁRIOS
-// ------------------------------------------------------------
+// ============================================================
 
 function el(id) {
     return document.getElementById(id);
 }
 
+function img(texto, fundo = '34495e', largura = 500, altura = 300) {
+    return `https://placehold.co/${largura}x${altura}/${fundo}/ffffff?text=${encodeURIComponent(String(texto).replaceAll(' ', '+'))}`;
+}
+
 function log(msg) {
-    el('log-eventos').innerHTML = msg;
+    if (el('log-eventos')) el('log-eventos').innerHTML = msg;
+}
+
+function logBatalha(msg) {
+    if (el('log-batalha')) el('log-batalha').innerHTML = msg;
 }
 
 function randomItem(lista) {
     return lista[Math.floor(Math.random() * lista.length)];
+}
+
+function clamped(numero, minimo, maximo) {
+    return Math.max(minimo, Math.min(maximo, numero));
+}
+
+function ilhaAtual() {
+    return ilhas[estado.ilhaIndex];
+}
+
+function bossAtual() {
+    return ilhaAtual()?.bosses?.[estado.bossIndex] || null;
+}
+
+function chaveTreino(tipo) {
+    return `${estado.ilhaIndex}:${tipo}`;
+}
+
+function treinamentoConcluido(tipo) {
+    return Boolean(jogador.treinamentos[chaveTreino(tipo)]);
+}
+
+function marcarTreinamento(tipo) {
+    jogador.treinamentos[chaveTreino(tipo)] = true;
+}
+
+function todasBatalhasDaIlhaConcluidas() {
+    return estado.bossIndex >= listaBossesDaIlha().length;
+}
+
+function anexarMiniaturaDoBotao(btn, url) {
+    if (!btn || !url || btn.classList.contains('ataque-btn') || btn.classList.contains('boat-card')) return;
+    let thumb = btn.querySelector(':scope > .button-thumb');
+    if (!thumb) {
+        thumb = document.createElement('img');
+        thumb.className = 'button-thumb';
+        thumb.alt = '';
+        thumb.setAttribute('aria-hidden', 'true');
+        btn.prepend(thumb);
+    }
+    thumb.src = url;
+}
+
+function renderizarImagensDosBotoes() {
+    document.querySelectorAll('button[data-img]').forEach(btn => {
+        if (btn.dataset.img) {
+            btn.style.setProperty('--button-img', `url("${btn.dataset.img}")`);
+            btn.classList.add('has-button-image');
+            anexarMiniaturaDoBotao(btn, btn.dataset.img);
+        }
+    });
+}
+
+function aplicarImagemBotao(btn, url) {
+    btn.style.setProperty('--button-img', `url("${url}")`);
+    btn.classList.add('has-button-image');
+    anexarMiniaturaDoBotao(btn, url);
 }
 
 function mudarTela(idTela) {
@@ -495,77 +417,93 @@ function mudarTela(idTela) {
         tela.classList.remove('tela-ativa');
         tela.classList.add('tela-oculta');
     });
-
     const alvo = el(idTela);
-
     if (!alvo) return;
-
     alvo.classList.remove('tela-oculta');
     alvo.classList.add('tela-ativa');
+    renderizarImagensDosBotoes();
 }
 
 function atualizarHeader() {
-    el('status-ilha').textContent =
-        ilhaAtual.nome ||
-        (jogador.faccao === 'Tenryuubito'
-            ? 'Mary Geoise'
-            : 'Vila Foosha');
+    el('status-ilha').textContent = ilhaAtual().nome;
+    el('status-barco').textContent = estado.barcoConseguido ? `Barco: ${jogador.barcoTipo || 'adquirido'}` : 'Sem barco';
+}
 
-    el('status-barco').textContent =
-        barcoConseguido
-            ? 'Barco adquirido'
-            : 'Sem barco';
+function atualizarTituloPoster() {
+    if (jogador.faccao === 'Pirata') {
+        if (jogador.recompensa >= 1000000000) return 'YONKOU • PIRATA';
+        if (jogador.recompensa >= 500000000) return 'SUPER NOVA • PIRATA';
+        return 'PIRATA';
+    }
+    if (jogador.faccao === 'Marinha') return jogador.patente;
+    if (jogador.faccao === 'Tenryuubito') return 'TENRYUUBITO';
+    return 'Novato';
+}
+
+function atualizarPatente() {
+    if (jogador.faccao !== 'Marinha') return;
+    const vitorias = contarBossesDerrotados();
+    const patentes = [
+        'Recruta',
+        'Tenente',
+        'Comandante',
+        'Capitão',
+        'Contra-Almirante',
+        'Vice-Almirante',
+        'Almirante',
+        'Almirante de Frota'
+    ];
+    jogador.patente = patentes[Math.min(patentes.length - 1, vitorias)];
+}
+
+function quantidadeBossesDaIlha(indice) {
+    const nome = ilhas[indice]?.nome;
+    if (nome === 'Marineford') return 3;
+    if (nome === 'Egghead' && jogador.faccao === 'Marinha') return 7;
+    if (nome === 'Egghead') return 7;
+    return ilhas[indice]?.bosses?.length || 0;
+}
+
+function contarBossesDerrotados() {
+    let total = 0;
+    for (let i = 0; i < ilhas.length; i++) {
+        if (i < estado.ilhaIndex) total += quantidadeBossesDaIlha(i);
+    }
+    return total + Math.min(estado.bossIndex, quantidadeBossesDaIlha(estado.ilhaIndex));
 }
 
 function atualizarPoder() {
     let poder = jogador.poderBase;
-
     const racaData = racas.find(r => r.nome === jogador.raca);
-
-    if (racaData) {
-        poder += racaData.bonusPoder;
-    }
+    if (racaData) poder += racaData.bonusPoder;
 
     poder += jogador.haki.obs * 2;
     poder += jogador.haki.arm * 2;
+    poder += jogador.haki.reiValor * 1.2;
     poder += jogador.maestriaEstilo * 3;
+    poder += jogador.maestriaFruta * 2;
 
-    if (jogador.haki.rei) {
-        poder += 18;
-    }
-
-    if (jogador.haki.obsAvancado) {
-        poder += 15;
-    }
-
-    if (jogador.haki.armAvancado) {
-        poder += 15;
-    }
-
+    if (jogador.haki.rei) poder += 10;
+    if (jogador.haki.obsAvancado) poder += 18;
+    if (jogador.haki.armAvancado) poder += 20;
     if (jogador.fruta) {
         poder += jogador.fruta.poder;
+        if (jogador.fruta.despertada) poder += Math.floor(jogador.fruta.poder * 0.7);
     }
+
+    if (jogador.semSombra) poder = Math.max(1, poder - 25);
 
     jogador.aliados.forEach(aliado => {
         poder += aliado.poder;
-
-        if (aliado.fruta) {
-            poder += Math.floor(aliado.fruta.poder / 2);
-        }
+        if (aliado.fruta) poder += Math.floor(aliado.fruta.poder / 2);
     });
 
-    jogador.poder = poder;
-
-    if (el('poder-jogador-poster')) {
-        el('poder-jogador-poster').textContent = poder;
-    }
+    jogador.poder = Math.round(poder);
+    el('poder-jogador-poster').textContent = jogador.poder;
 }
 
-// ------------------------------------------------------------
-// CARTAZ
-// ------------------------------------------------------------
-
 function atualizarCartaz() {
+    atualizarPatente();
     atualizarPoder();
 
     el('nome-pirata').textContent = jogador.nome;
@@ -573,18 +511,12 @@ function atualizarCartaz() {
     el('raca-pirata').textContent = jogador.raca || '---';
     el('genero-pirata').textContent = jogador.genero || '---';
     el('estilo-pirata').textContent = jogador.estiloLuta || 'Nenhum';
-
-    el('fruta-pirata').textContent =
-        jogador.fruta
-            ? jogador.fruta.nome
-            : 'Nenhuma';
-
+    el('fruta-pirata').textContent = jogador.fruta ? `${jogador.fruta.nome}${jogador.fruta.despertada ? ' • DESPERTADA' : ''}` : 'Nenhuma';
     el('haki-obs').textContent = jogador.haki.obs;
     el('haki-arm').textContent = jogador.haki.arm;
-    el('haki-rei').textContent = jogador.haki.reiEstado;
-
-    el('recompensa-pirata').textContent =
-        jogador.recompensa.toLocaleString('pt-BR');
+    el('haki-rei').textContent = jogador.haki.reiEstado === 'Despertado!' ? `${jogador.haki.reiValor}/50` : '0/30';
+    el('recompensa-pirata').textContent = jogador.recompensa.toLocaleString('pt-BR');
+    el('titulo-pirata').textContent = atualizarTituloPoster();
 
     if (jogador.fruta) {
         el('img-fruta-perfil').src = jogador.fruta.img;
@@ -594,2428 +526,1793 @@ function atualizarCartaz() {
         el('img-fruta-perfil').src = '';
     }
 
-    let titulo = jogador.faccao || 'Novato';
-
-    if (
-        jogador.haki.rei &&
-        jogador.haki.reiEstado !== 'Não possui'
-    ) {
-        titulo += ' • HAKI DO REI';
-    }
-
-    el('titulo-pirata').textContent = titulo;
-
-    if (jogador.faccao === 'Tenryuubito') {
-        el('recompensa-pirata').textContent =
-            jogador.recompensa.toLocaleString('pt-BR');
-    }
+    atualizarBotoesHakiAtivo();
+    atualizarBotoesIlha();
+    atualizarMapRoute();
 }
 
 function definirImagemPersonagem() {
-    const chave =
-        `${jogador.raca}-${jogador.genero}`;
-
-    const img = el('img-personagem');
-
-    img.src =
-        imagensPorPerfil[chave] ||
-        'https://placehold.co/700x500/273542/ffffff?text=PERSONAGEM';
-
-    img.onerror = () => {
-        img.onerror = null;
-
-        img.src =
-            `https://placehold.co/700x500/273542/ffffff?text=${
-                encodeURIComponent(
-                    jogador.raca + ' • ' + jogador.genero
-                )
-            }`;
+    const chave = `${jogador.raca}-${jogador.genero}`;
+    const imgEl = el('img-personagem');
+    imgEl.src = imagensPorPerfil[chave] || img('PERSONAGEM', '273542');
+    imgEl.onerror = () => {
+        imgEl.onerror = null;
+        imgEl.src = img(`${jogador.raca}+${jogador.genero}`, '273542');
     };
 }
 
-function mostrarNotaTreino(nota, tipo, acertou) {
-    const caixa = el('nota-treino');
-
-    caixa.hidden = false;
-
-    caixa.textContent =
-        `NOTA ${nota}/10 • ${
-            acertou
-                ? 'TREINO CONCLUÍDO'
-                : 'TREINO FALHOU'
-        }`;
-
-    caixa.style.color =
-        acertou
-            ? '#48e58b'
-            : '#ff7c88';
-
-    caixa.style.borderColor =
-        acertou
-            ? '#3f6b57'
-            : '#6e3038';
-
-    if (acertou) {
-        jogador.treinamentos[tipo]++;
-
-        if (tipo === 'obs') {
-            jogador.haki.obs =
-                Math.min(
-                    10,
-                    jogador.haki.obs +
-                    (nota >= 9 ? 2 : 1)
-                );
-        }
-
-        else if (tipo === 'arm') {
-            jogador.haki.arm =
-                Math.min(
-                    10,
-                    jogador.haki.arm +
-                    (nota >= 9 ? 2 : 1)
-                );
-        }
-
-        else if (tipo === 'estilo') {
-            jogador.maestriaEstilo =
-                Math.min(
-                    10,
-                    jogador.maestriaEstilo +
-                    (nota >= 9 ? 2 : 1)
-                );
-        }
-
-        atualizarCartaz();
-    }
-}
-
-// ------------------------------------------------------------
-// CRIAÇÃO
-// ------------------------------------------------------------
+// ============================================================
+// CRIAÇÃO E FACÇÕES
+// ============================================================
 
 function escolherFaccao(faccao) {
+    if (faccao !== 'Marinha' && faccao !== 'Pirata') return;
     jogador.faccao = faccao;
+    el('btn-marinha').classList.remove('selecionado');
+    el('btn-pirata').classList.remove('selecionado');
+    el(faccao === 'Marinha' ? 'btn-marinha' : 'btn-pirata').classList.add('selecionado');
+    log(`Você escolheu ${faccao}. O Haki do Rei continua nas mãos do destino.`);
+}
 
-    el('btn-marinha')
-        .classList
-        .remove('selecionado');
+function resetarEstadoDoJogador() {
+    jogador.nome = 'Novato';
+    jogador.poderBase = 10;
+    jogador.poder = 10;
+    jogador.vida = 120;
+    jogador.vidaMaxima = 120;
+    jogador.raca = '';
+    jogador.genero = '';
+    jogador.recompensa = 0;
+    jogador.patente = 'Recruta';
+    jogador.haki = {
+        obs: 0,
+        arm: 0,
+        rei: false,
+        reiEstado: 'Não possui',
+        reiValor: 0,
+        reiMax: 30,
+        obsAvancado: false,
+        armAvancado: false
+    };
+    jogador.fruta = null;
+    jogador.estiloLuta = null;
+    jogador.maestriaEstilo = 0;
+    jogador.maestriaFruta = 0;
+    jogador.inventario = [];
+    jogador.aliados = [];
+    jogador.treinamentos = {};
+    jogador.ilhaIndex = 0;
+    jogador.frutaPodeDespertar = false;
+    jogador.semSombra = false;
+    jogador.barcoTipo = '';
+    jogador.emJornada = true;
 
-    el('btn-pirata')
-        .classList
-        .remove('selecionado');
-
-    if (faccao === 'Marinha') {
-        el('btn-marinha')
-            .classList
-            .add('selecionado');
-    }
-
-    else {
-        el('btn-pirata')
-            .classList
-            .add('selecionado');
-    }
-
-    log(
-        `Você escolheu a ${faccao}. Agora deixe o destino sortear o resto.`
-    );
+    estado.barcoConseguido = false;
+    estado.tentativasRoubo = 0;
+    estado.ilhaIndex = 0;
+    estado.bossIndex = 0;
+    estado.bossHP = 0;
+    estado.bossAtivo = null;
+    estado.ataqueEmAndamento = false;
+    estado.hakiArmAtivo = false;
+    estado.hakiObsAtivo = false;
+    estado.hakiReiAtivo = false;
+    estado.aliadoAtacou = false;
+    estado.eventoPendente = null;
+    estado.cactusResolvido = false;
+    estado.travessiaResolvida = false;
 }
 
 function criarPersonagem() {
     if (!jogador.faccao) {
-        alert(
-            'Escolha Marinha ou Pirata primeiro!'
-        );
-
+        alert('Escolha Marinha ou Pirata primeiro!');
         return;
     }
 
-    jogador.raca =
-        randomItem(racas).nome;
+    resetarEstadoDoJogador();
+    // A facção foi escolhida pelo jogador antes do reset.
+    // Recupera o valor selecionado dos botões.
+    const faccaoEscolhida = document.querySelector('.faccao-btn.selecionado')?.id === 'btn-marinha' ? 'Marinha' : 'Pirata';
+    jogador.faccao = faccaoEscolhida;
 
-    jogador.genero =
-        randomItem(generos);
+    jogador.raca = randomItem(racas).nome;
+    jogador.genero = randomItem(generos);
+    jogador.nome = randomItem(['Novato', 'Sem Nome', 'Capitão Ninguém', 'Ameaça do Porto', 'Zé do Convés']);
 
-    jogador.nome =
-        randomItem([
-            'Novato',
-            'Sem Nome',
-            'Capitão Ninguém',
-            'Ameaça do Porto',
-            'Zé do Convés'
-        ]);
+    // 30% para nascer com o Haki do Rei. O valor começa falso no objeto.
+    jogador.haki.rei = Math.random() < 0.30;
+    jogador.haki.reiEstado = jogador.haki.rei ? 'Adormecido' : 'Não possui';
 
-    jogador.haki.rei =
-        Math.random() < 0.10;
-
-    jogador.haki.reiEstado =
-        jogador.haki.rei
-            ? 'Adormecido'
-            : 'Não possui';
-
-    // 1% de chance de Tenryuubito
+    // 1% de chance especial de Tenryuubito.
     if (Math.random() < 0.01) {
         jogador.faccao = 'Tenryuubito';
         jogador.raca = 'Humano';
-        jogador.genero =
-            randomItem(generos);
-
+        jogador.genero = randomItem(generos);
         jogador.recompensa = 999999999;
-
-        log(
-            '☼ 1% ABSURDO! Você nasceu como um TENRYUUBITO. O jogo decidiu te dar privilégios que não fazem sentido.'
-        );
-    }
-
-    else {
-        log(
-            `Você nasceu como ${jogador.raca} (${jogador.genero}) da ${jogador.faccao}.`
-        );
-    }
-
-    const racaData =
-        racas.find(
-            r => r.nome === jogador.raca
-        );
-
-    if (racaData) {
-        jogador.haki.obs =
-            Math.min(
-                10,
-                racaData.bonusObs
-            );
-
-        jogador.haki.arm =
-            Math.min(
-                10,
-                racaData.bonusArm
-            );
+        log('☼ 1% ABSURDO! O sistema decidiu que você nasceu Tenryuubito. Sua escolha de facção não foi alterada por erro: foi o evento raro que tomou conta do destino.');
+    } else {
+        log(`Você nasceu como ${jogador.raca} (${jogador.genero}) da ${jogador.faccao}. Haki do Rei: ${jogador.haki.rei ? 'Adormecido' : 'Não possui'}.`);
     }
 
     definirImagemPersonagem();
     atualizarCartaz();
-
-    el('cartaz').style.display =
-        'block';
-
-    el('btn-treino-rei').hidden =
-        !jogador.haki.rei;
-
-    el('tela-criacao')
-        .classList
-        .remove('tela-ativa');
-
-    el('tela-criacao')
-        .classList
-        .add('tela-oculta');
+    el('cartaz').style.display = 'block';
+    el('tela-criacao').classList.remove('tela-ativa');
+    el('tela-criacao').classList.add('tela-oculta');
 
     if (jogador.faccao === 'Tenryuubito') {
-        el('texto-inicio-ilha').textContent =
-            'Mary Geoise. Você poderia mandar alguém fazer um barco para você, mas decidiu chamar um navio do Governo Mundial.';
-
+        el('texto-inicio-ilha').textContent = 'Você recebeu acesso a um navio do Governo Mundial. Não existe opção de roubo ou alistamento aqui.';
         el('opcoes-pirata').hidden = true;
         el('opcoes-marinha').hidden = true;
         el('opcoes-tenryuubito').hidden = false;
-    }
-
-    else if (jogador.faccao === 'Marinha') {
-        el('texto-inicio-ilha').textContent =
-            'Vila Foosha (Base da Marinha). Você se apresenta e recebe uma embarcação oficial.';
-
+    } else if (jogador.faccao === 'Marinha') {
+        el('texto-inicio-ilha').textContent = 'Você é da Marinha. Apresente-se à base e receba sua embarcação oficial. Roubar barco está fora de cogitação.';
         el('opcoes-pirata').hidden = true;
         el('opcoes-marinha').hidden = false;
         el('opcoes-tenryuubito').hidden = true;
-    }
-
-    else {
-        el('texto-inicio-ilha').textContent =
-            'Vila Foosha. Você conseguiu autorização para sair? Não. Mas isso nunca impediu ninguém.';
-
+    } else {
+        el('texto-inicio-ilha').textContent = 'Você é pirata. Seu começo é simples: roubar um barco ou comprar uma velharia que, por algum milagre, boia.';
         el('opcoes-pirata').hidden = false;
         el('opcoes-marinha').hidden = true;
         el('opcoes-tenryuubito').hidden = true;
     }
 
-    mudarTela('tela-barco');
-
+    estado.ilhaIndex = 0;
+    jogador.ilhaIndex = 0;
     atualizarHeader();
+    mudarTela('tela-barco');
 }
 
-// ------------------------------------------------------------
-// BARCO E VIAGEM
-// ------------------------------------------------------------
+// ============================================================
+// BARCO
+// ============================================================
 
-function conseguirBarco(mensagem) {
-    barcoConseguido = true;
-
+function conseguirBarco(mensagem, tipo = 'barco meia-boca') {
+    estado.barcoConseguido = true;
+    jogador.barcoTipo = tipo;
     log(mensagem);
-
     atualizarHeader();
-
-    setTimeout(
-        () => mudarTela('tela-mapa'),
-        900
-    );
+    setTimeout(() => {
+        atualizarMapRoute();
+        mudarTela('tela-mapa');
+    }, 500);
 }
 
 function roubarBarco() {
-    if (tentativasRoubo >= 1) {
-        log(
-            'Você já gastou sua tentativa. A Marinha tem memória, infelizmente.'
-        );
-
+    if (jogador.faccao !== 'Pirata') {
+        log('🚫 Essa opção simplesmente não existe para a Marinha. Seu personagem não virou pirata sozinho.');
+        return;
+    }
+    if (estado.tentativasRoubo >= 1) {
+        log('Você já gastou sua única tentativa de roubo. Agora só dá para comprar a velharia.');
         return;
     }
 
-    tentativasRoubo++;
+    estado.tentativasRoubo++;
 
     if (Math.random() < 0.50) {
         jogador.recompensa += 500;
-
+        conseguirBarco('☠ Você roubou um barco com sucesso. A Marinha agora lembra de você.', 'barco roubado');
         atualizarCartaz();
-
-        conseguirBarco(
-            '☠ Você roubou um barco com sucesso. A Marinha agora tem mais uma razão para lembrar de você.'
-        );
-    }
-
-    else {
-        log(
-            '❌ Você falhou ao roubar o barco! Era sua única tentativa. Agora só resta comprar uma velharia.'
-        );
+    } else {
+        log('❌ O roubo falhou. Era a única tentativa. Felizmente, a loja de velharias continua aberta.');
     }
 }
 
 function comprarBarco() {
-    conseguirBarco(
-        '⛵ Você comprou um barco meia-boca. Ele boia, então tecnicamente cumpre o contrato.'
-    );
+    if (jogador.faccao !== 'Pirata') {
+        log('Marinha não compra a própria embarcação aqui. A opção correta é se apresentar à base.');
+        return;
+    }
+    conseguirBarco('⛵ Você comprou um barco meia-boca. Ele boia, então já é um começo.', 'velharia flutuante');
 }
 
 function receberNavioMarinha() {
-    conseguirBarco(
-        '⚓ A Marinha te entregou um navio de serviço. Não faça perguntas sobre o estado dele.'
-    );
+    if (jogador.faccao !== 'Marinha') {
+        log('🚫 Somente marinheiros recebem o navio oficial da Marinha.');
+        return;
+    }
+    conseguirBarco('⚓ Você se apresentou à Marinha e recebeu uma embarcação oficial.', 'navio da Marinha');
 }
 
 function chamarNavioGoverno() {
-    jogador.recompensa =
-        Math.max(
-            jogador.recompensa,
-            999999999
-        );
-
-    conseguirBarco(
-        '☼ Um navio de guerra gigantesco apareceu porque você é Tenryuubito. A física pediu demissão.'
-    );
-
+    if (jogador.faccao !== 'Tenryuubito') {
+        log('🚫 O Governo Mundial não está mandando navio para qualquer pessoa.');
+        return;
+    }
+    jogador.recompensa = Math.max(jogador.recompensa, 999999999);
+    conseguirBarco('☼ Um navio do Governo Mundial apareceu porque você é Tenryuubito.', 'navio do Governo Mundial');
     atualizarCartaz();
 }
 
-function irParaBuggy() {
-    if (!barcoConseguido) {
-        log(
-            'Você precisa de um barco antes de enfrentar o mar.'
-        );
+// ============================================================
+// MAPA / ROTA
+// ============================================================
 
+function atualizarMapRoute() {
+    const mapa = el('rota-ilhas');
+    if (!mapa) return;
+    mapa.innerHTML = '';
+
+    const inicio = Math.max(0, estado.ilhaIndex - 3);
+    const fim = Math.min(ilhas.length - 1, estado.ilhaIndex + 4);
+
+    for (let i = inicio; i <= fim; i++) {
+        const node = document.createElement(i === estado.ilhaIndex || i < estado.ilhaIndex ? 'button' : 'div');
+        node.className = 'route-node';
+        const conhecida = i <= estado.ilhaIndex;
+        const atual = i === estado.ilhaIndex;
+
+        if (atual) node.classList.add('active-node');
+        else if (i < estado.ilhaIndex) node.classList.add('visited-node');
+        else node.classList.add('locked-node');
+
+        const titulo = conhecida ? ilhas[i].nome : '????';
+        const subtitulo = atual ? 'VOCÊ ESTÁ AQUI' : i < estado.ilhaIndex ? 'JÁ VISITADA' : 'NÃO DESCOBERTA';
+        node.innerHTML = `<span>${String(i + 1).padStart(2, '0')}</span><b>${titulo}</b><small>${subtitulo}</small>`;
+        aplicarImagemBotao(node, conhecida ? img(titulo.toUpperCase().replaceAll(' ', '+'), atual ? '4b6533' : '34495e', 130, 80) : img('????', '222222', 130, 80));
+
+        if (i < estado.ilhaIndex) {
+            node.onclick = () => voltarParaIlhaVisitada(i);
+        }
+        mapa.appendChild(node);
+
+        if (i < fim) {
+            const linha = document.createElement('div');
+            linha.className = 'route-line';
+            mapa.appendChild(linha);
+        }
+    }
+
+    const proxima = estado.ilhaIndex + 1;
+    const btnProxima = el('btn-proxima-ilha');
+    if (!btnProxima) return;
+
+    if (proxima >= ilhas.length) {
+        btnProxima.disabled = true;
+        btnProxima.textContent = 'FIM DA ROTA';
+    } else {
+        btnProxima.disabled = false;
+        btnProxima.textContent = `SEGUIR PARA ???? (${proxima + 1})`;
+    }
+
+    renderizarImagensDosBotoes();
+}
+
+function voltarParaIlhaAtual() {
+    mudarTela('tela-ilha');
+    carregarTelaDaIlha();
+}
+
+function voltarParaIlhaVisitada(indice) {
+    if (indice >= estado.ilhaIndex) return;
+    estado.ilhaIndex = indice;
+    jogador.ilhaIndex = indice;
+    estado.bossIndex = ilhas[indice].bosses.length;
+    // Ao retornar, bosses antigos continuam derrotados.
+    if (indice === 2 && ilhas[indice].bosses.length) estado.bossIndex = 1;
+    carregarTelaDaIlha();
+}
+
+function irParaProximaIlha() {
+    if (!estado.barcoConseguido) {
+        log('Você ainda precisa de um barco.');
+        mudarTela('tela-barco');
         return;
     }
 
-    ilhaAtual.nome =
-        'Orange Town';
+    const atual = ilhaAtual();
+    if (!todasBatalhasDaIlhaConcluidas()) {
+        log(`⚔ Antes de continuar pela rota, você precisa concluir os desafios de ${atual.nome}.`);
+        return;
+    }
+    if (atual.options?.evento && atual.options.evento !== 'egghead' && !atual.options.eventoResolvido && atual.nome !== 'Alabasta') {
+        log('📜 Há um evento importante desta ilha que precisa ser resolvido antes da próxima viagem.');
+        return;
+    }
 
-    ilhaAtual.frutaBuscas =
-        2;
+    const destino = estado.ilhaIndex + 1;
+    if (destino >= ilhas.length) return;
 
-    ilhaAtual.frutaChance =
-        0.35;
+    iniciarViagem(destino);
+}
 
-    ilhaAtual.estiloBuscaDisponivel =
-        true;
+function irParaBuggy() {
+    // Mantém a função antiga funcionando, mas agora respeita a rota.
+    if (estado.ilhaIndex !== 0) {
+        if (estado.ilhaIndex >= 2) {
+            voltarParaIlhaVisitada(2);
+            return;
+        }
+    }
+    if (!estado.barcoConseguido) {
+        log('Você precisa de um barco antes de seguir para Orange Town.');
+        return;
+    }
+    iniciarViagem(2);
+}
 
-    ilhaAtual.aliadoBuscaDisponivel =
-        true;
-
-    bossDerrotado = false;
-    bossHP = bossHPMax;
+function iniciarViagem(destino) {
+    if (destino > estado.ilhaIndex + 1) {
+        log('❌ Ilha não descoberta. As próximas continuam como ???? até você pisar nelas.');
+        return;
+    }
 
     mudarTela('tela-navegacao');
-
-    atualizarHeader();
-
+    el('subtexto-navegando').textContent = `Rumo a ${ilhas[destino].nome}...`;
     let pontos = 0;
+    const intervalo = setInterval(() => {
+        pontos = (pontos + 1) % 4;
+        el('texto-navegando').textContent = 'NAVEGANDO' + '.'.repeat(pontos);
+    }, 320);
 
-    const intervalo =
-        setInterval(() => {
-            pontos =
-                (pontos + 1) % 4;
-
-            el('texto-navegando').textContent =
-                'NAVEGANDO' +
-                '.'.repeat(pontos);
-        }, 350);
+    const tempoViagem = destino === 6 ? 3200 : 2300;
+    const mensagemCeu = (ilhas[destino].nome === 'Skypiea')
+        ? setTimeout(() => {
+            el('subtexto-navegando').textContent = 'NAVEGANDO... o navio foi lançado para o céu! VOCÊ FOI ARREMESSADO PARA UMA ILHA NO CÉU!';
+        }, Math.floor(tempoViagem * 0.48))
+        : null;
 
     setTimeout(() => {
         clearInterval(intervalo);
-
-        resolverEventoMar();
-    }, 2600);
+        if (mensagemCeu) clearTimeout(mensagemCeu);
+        resolverTravessia(destino);
+    }, tempoViagem);
 }
 
-function resolverEventoMar() {
+function resolverTravessia(destino) {
+    const origem = ilhas[estado.ilhaIndex];
 
-    // Rei dos Mares
-    if (
-        jogador.faccao !== 'Tenryuubito' &&
-        !jogador.haki.rei &&
-        Math.random() < 0.20
-    ) {
-        el('desc-evento-mar').textContent =
-            jogador.fruta
-                ? 'Seu barco virou parcialmente. Como você é usuário de Akuma no Mi, o mar virou seu pior inimigo. Você perde 60 HP imediatamente.'
-                : 'O mar tremeu. Um monstro enorme surgiu e está mirando seu barco.';
-
-        el('acoes-evento-mar').innerHTML = '';
-
-        const btn =
-            document.createElement('button');
-
-        btn.className =
-            'btn-acao btn-danger';
-
-        btn.textContent =
-            jogador.fruta
-                ? 'AGUENTAR A PANCADA'
-                : 'TENTAR FUGIR';
-
-        btn.onclick =
-            jogador.fruta
-                ? sofrerQuedaNoMar
-                : escaparReiDosMares;
-
-        el('acoes-evento-mar')
-            .appendChild(btn);
-
-        mudarTela('tela-evento-mar');
-
+    // Jaya joga você para Skypiea durante a viagem.
+    if (origem.nome === 'Jaya' && ilhas[destino].nome === 'Skypiea') {
+        log('☁ NAVEGANDO... o navio foi lançado para cima! Você foi parar numa ilha no céu: SKYPEIA.');
+        estado.ilhaIndex = destino;
+        jogador.ilhaIndex = destino;
+        estado.bossIndex = 0;
+        carregarTelaDaIlha();
         return;
     }
 
-    if (jogador.haki.rei) {
-        log(
-            '👑 Um Rei dos Mares apareceu de longe, sentiu seu Haki do Rei e decidiu que hoje não era o dia.'
-        );
-    }
-
-    else {
-        log(
-            '🌊 Viagem tranquila. Você avistou Orange Town.'
-        );
-    }
-
-    chegarNaIlha();
-}
-
-function escaparReiDosMares() {
-    const chance =
-        Math.min(
-            0.90,
-            0.45 +
-            jogador.haki.obs * 0.05 +
-            (jogador.raca === 'Mink'
-                ? 0.10
-                : 0)
-        );
-
-    if (Math.random() < chance) {
-        log(
-            '👁 Você previu o movimento e desviou do Rei dos Mares!'
-        );
-
-        chegarNaIlha();
-    }
-
-    else {
-        jogador.vida -= 40;
-
-        log(
-            '💥 Você tentou fugir, mas o monstro acertou o barco. -40 HP.'
-        );
-
-        if (jogador.vida <= 0) {
-            finalizarMorte(
-                'O Rei dos Mares mandou você direto para o menu da existência.'
-            );
+    // Travessia para Cactus Island: Reverse Mountain para piratas, Calm Belt para marinheiros.
+    if (ilhas[destino].nome === 'Cactus Island') {
+        if (jogador.faccao === 'Pirata' || jogador.faccao === 'Tenryuubito') {
+            resolverReverseMountain(destino);
+        } else {
+            resolverCalmBelt(destino);
         }
-
-        else {
-            chegarNaIlha();
-        }
-    }
-}
-
-function sofrerQuedaNoMar() {
-    jogador.vida -= 60;
-
-    log(
-        '🌊 Você caiu no mar por causa da Akuma no Mi. -60 HP. Sobreviveu por pura insistência.'
-    );
-
-    if (jogador.vida <= 0) {
-        finalizarMorte(
-            'Você caiu no mar sendo usuário de Akuma no Mi. Não foi uma boa combinação.'
-        );
-
         return;
     }
 
-    chegarNaIlha();
+    estado.ilhaIndex = destino;
+    jogador.ilhaIndex = destino;
+    estado.bossIndex = 0;
+    estado.travessiaResolvida = false;
+    carregarTelaDaIlha();
 }
 
-function chegarNaIlha() {
-    el('nome-ilha-atual').textContent =
-        ilhaAtual.nome;
+function resolverReverseMountain(destino) {
+    el('titulo-evento-mar').textContent = 'REVERSE MOUNTAIN';
+    el('imagem-evento-mar').innerHTML = '⛰️🌊';
+    el('desc-evento-mar').textContent = 'Como pirata, você precisa sobreviver à subida da Reverse Mountain. Chance de sobrevivência: 60%.';
+    el('acoes-evento-mar').innerHTML = '';
 
-    el('count-fruta').textContent =
-        ilhaAtual.frutaBuscas;
+    const btn = document.createElement('button');
+    btn.className = 'btn-acao btn-primary';
+    btn.textContent = 'ENCARAR A MONTANHA';
+    aplicarImagemBotao(btn, img('REVERSE+MOUNTAIN', '3c4b5d', 140, 90));
+    btn.onclick = () => {
+        if (Math.random() < 0.60) {
+            estado.ilhaIndex = destino;
+            jogador.ilhaIndex = destino;
+            estado.bossIndex = 0;
+            log('⛰️ Você sobreviveu à Reverse Mountain! O barco saiu inteiro por milagre.');
+            carregarTelaDaIlha();
+            return;
+        }
 
-    el('btn-boss-ilha').disabled =
-        bossDerrotado;
+        naufragarReverseMountain(destino);
+    };
+    el('acoes-evento-mar').appendChild(btn);
+    mudarTela('tela-evento-mar');
+}
 
-    el('btn-boss-ilha').textContent =
-        bossDerrotado
-            ? 'BUGGY DERROTADO'
-            : 'ENFRENTAR BUGGY';
+function naufragarReverseMountain(destino) {
+    estado.barcoConseguido = false;
+    jogador.barcoTipo = '';
 
+    if (!jogador.fruta) {
+        log('🌊 O barco naufragou, mas você não tem Akuma no Mi. Você simplesmente nada até Cactus Island.');
+        estado.ilhaIndex = destino;
+        jogador.ilhaIndex = destino;
+        estado.bossIndex = 0;
+        carregarTelaDaIlha();
+        return;
+    }
+
+    if (jogador.aliados.length === 0) {
+        finalizarMorte('🌊 O barco naufragou na Reverse Mountain. Você tinha uma Akuma no Mi e não havia ninguém para salvá-lo. Você afundou.');
+        return;
+    }
+
+    const todosTemFruta = jogador.aliados.every(a => Boolean(a.fruta));
+    if (todosTemFruta) {
+        finalizarMorte('🌊 O barco naufragou e todos os aliados também eram usuários de Akuma no Mi. O grupo inteiro afundou.');
+        return;
+    }
+
+    log('🌊 O barco naufragou. Pelo menos um aliado ainda consegue nadar. Vocês abandonam o navio e nadam até Cactus Island.');
+    estado.ilhaIndex = destino;
+    jogador.ilhaIndex = destino;
+    estado.bossIndex = 0;
+    carregarTelaDaIlha();
+}
+
+function resolverCalmBelt(destino) {
+    el('titulo-evento-mar').textContent = 'CALM BELT';
+    el('imagem-evento-mar').innerHTML = '🌊⚓';
+    el('desc-evento-mar').textContent = 'Como marinheiro, você atravessa o Calm Belt em uma embarcação apropriada da Marinha. A rota é silenciosa e protegida.';
+    el('acoes-evento-mar').innerHTML = '';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-acao btn-primary';
+    btn.textContent = 'ATRAVESSAR O CALM BELT';
+    aplicarImagemBotao(btn, img('CALM+Belt', '2a4653', 140, 90));
+    btn.onclick = () => {
+        estado.ilhaIndex = destino;
+        jogador.ilhaIndex = destino;
+        estado.bossIndex = 0;
+        log('⚓ O Calm Belt ficou para trás. Você chegou a Cactus Island.');
+        carregarTelaDaIlha();
+    };
+    el('acoes-evento-mar').appendChild(btn);
+    mudarTela('tela-evento-mar');
+}
+
+// ============================================================
+// TELA DA ILHA / EVENTOS ESPECIAIS
+// ============================================================
+
+function carregarTelaDaIlha() {
+    const ilha = ilhaAtual();
+    ilhaAtual().buscasFruta = Math.max(ilhaAtual().buscasFruta ?? 2, 0);
+    el('nome-ilha-atual').textContent = ilha.nome;
+    el('descricao-ilha').textContent = ilha.descricao;
+    el('count-fruta').textContent = ilha.buscasFruta;
     atualizarHeader();
-
+    atualizarBotoesIlha();
+    atualizarCartaz();
     mudarTela('tela-ilha');
 
-    log(
-        `📍 Você chegou em ${ilhaAtual.nome}. Existem ${ilhaAtual.frutaBuscas} buscas de Akuma no Mi restantes.`
-    );
+    if (ilha.options?.evento && !ilha.options.eventoResolvido) {
+        prepararEventoDeIlha(ilha.options.evento);
+    }
 }
 
-// ------------------------------------------------------------
-// AKUMA NO MI
-// ------------------------------------------------------------
+function prepararEventoDeIlha(tipo) {
+    if (tipo === 'cactus' && !estado.cactusResolvido) {
+        mostrarEventoCactus();
+    } else if (tipo === 'alabasta-trap') {
+        el('texto-progressao-ilha').textContent = 'Tentar enfrentar o boss aqui primeiro aciona a armadilha do deserto.';
+    } else if (tipo === 'water7') {
+        mostrarEventoWater7();
+    } else if (tipo === 'sabaody') {
+        mostrarEventoSabaody();
+    } else if (tipo === 'pudding') {
+        atualizarBotoesIlha();
+    } else if (tipo === 'egghead') {
+        el('texto-progressao-ilha').textContent = jogador.faccao === 'Marinha'
+            ? 'Sua missão em Egghead: eliminar os Vegapunks.'
+            : 'Sua missão em Egghead: atravessar Rob Lucci, Kizaru e os Gorosei.';
+    }
+}
 
-function escolherFrutaPorPeso() {
-    const total =
-        frutas.reduce(
-            (soma, fruta) =>
-                soma + fruta.peso,
-            0
-        );
+function mostrarEventoCactus() {
+    el('titulo-evento').textContent = 'CACTUS ISLAND';
+    el('nome-evento').textContent = 'O pessoal da ilha quer festa.';
+    el('desc-evento').textContent = 'Você pode ignorar a galera e seguir viagem ou curtir até falar chega.';
+    el('img-evento').src = img('CACTUS+ISLAND+FESTA', '5c3c24', 600, 420);
+    el('botoes-evento').innerHTML = '';
 
-    let rolagem =
-        Math.random() * total;
+    const sair = criarBotaoEvento('IR EMBORA', img('IR+EMBORA', '34495e'), () => {
+        estado.cactusResolvido = true;
+        ilhas[estado.ilhaIndex].options.eventoResolvido = true;
+        log('Você não curtiu a festa. Foi embora sem complicação.');
+        prepararFimDaIlhaSemBoss();
+    });
 
-    for (const fruta of frutas) {
-        rolagem -= fruta.peso;
+    const curtir = criarBotaoEvento('CURTIR COM O POVO', img('FESTA', '5d3a1d'), () => {
+        estado.cactusResolvido = true;
+        ilhas[estado.ilhaIndex].options.eventoResolvido = true;
+        if (jogador.haki.obs > 0 || jogador.haki.obsAvancado) {
+            log('👁 Seu Haki da Observação prevê uma armada chegando. Você termina a festa antes da emboscada e vai embora inteiro.');
+            prepararFimDaIlhaSemBoss();
+        } else {
+            finalizarMorte('⚔️ Você bebeu, curtiu e não percebeu a armada. Sem Haki da Observação para prever a emboscada, você foi capturado e esquartejado.');
+        }
+    });
 
-        if (rolagem <= 0) {
-            return fruta;
+    el('botoes-evento').append(sair, curtir);
+    mudarTela('tela-evento');
+}
+
+function mostrarEventoWater7() {
+    if (ilhas[estado.ilhaIndex].options.eventoResolvido) return;
+    el('titulo-evento').textContent = 'WATER 7';
+    el('nome-evento').textContent = 'Franky oferece um barco muito melhor.';
+    el('desc-evento').textContent = 'Aqui existe maior incidência de aliados carpinteiros. Você também pode comprar uma embarcação nova.';
+    el('img-evento').src = img('FRANKY+SHIPYARD', '394d55', 600, 420);
+    el('botoes-evento').innerHTML = '';
+
+    const comprar = criarBotaoEvento('COMPRAR BARCO MELHOR', img('BARCO+MELHOR', '4c6133'), () => {
+        estado.barcoConseguido = true;
+        jogador.barcoTipo = 'navio melhorado por Franky';
+        ilhas[estado.ilhaIndex].options.eventoResolvido = true;
+        log('🔧 Franky te vendeu um barco muito melhor. A viagem agora é menos humilhante.');
+        atualizarHeader();
+        montarListaAliados();
+        setTimeout(() => carregarTelaDaIlha(), 350);
+    });
+
+    const recusar = criarBotaoEvento('IR SEM COMPRAR', img('SEM+COMPRA', '4a3b2d'), () => {
+        ilhas[estado.ilhaIndex].options.eventoResolvido = true;
+        prepararFimDaIlhaSemBoss();
+    });
+
+    el('botoes-evento').append(comprar, recusar);
+    mudarTela('tela-evento');
+}
+
+function mostrarEventoSabaody() {
+    if (ilhas[estado.ilhaIndex].options.eventoResolvido) return;
+    el('titulo-evento').textContent = 'SABAODY';
+    el('nome-evento').textContent = 'O jornal chegou.';
+    el('desc-evento').textContent = jogador.faccao === 'Marinha'
+        ? 'Você lê que Ace foi capturado. Agora é convocado para a guerra por obrigação.'
+        : 'Você lê que Ace foi capturado. Decide ir à guerra porque aparentemente hoje a ideia é arrumar problema por diversão.';
+    el('img-evento').src = img('JORNAL', '6c5b42', 600, 420);
+    el('botoes-evento').innerHTML = '';
+
+    const btn = criarBotaoEvento('IR PARA MARINEFORD', img('MARINEFORD', '5a2b2b'), () => {
+        ilhas[estado.ilhaIndex].options.eventoResolvido = true;
+        log(jogador.faccao === 'Marinha'
+            ? '⚓ Você foi convocado para Marineford.'
+            : '☠ Você decidiu ir para Marineford por diversão. A ideia já parece duvidosa.');
+        prepararFimDaIlhaSemBoss();
+    });
+    el('botoes-evento').appendChild(btn);
+    mudarTela('tela-evento');
+}
+
+function criarBotaoEvento(texto, imagem, acao) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-acao btn-primary';
+    btn.textContent = texto;
+    aplicarImagemBotao(btn, imagem);
+    btn.onclick = acao;
+    return btn;
+}
+
+function prepararFimDaIlhaSemBoss() {
+    atualizarBotoesIlha();
+    carregarTelaDaIlha();
+}
+
+function atualizarBotoesIlha() {
+    const ilha = ilhaAtual();
+    const temFrutas = ilha.buscasFruta > 0;
+    el('count-fruta').textContent = ilha.buscasFruta;
+
+    el('btn-treino-obs').disabled = treinamentoConcluido('obs') || jogador.haki.obs >= 30;
+    el('btn-treino-arm').disabled = treinamentoConcluido('arm') || jogador.haki.arm >= 30;
+    el('btn-treino-obs').classList.toggle('concluido', el('btn-treino-obs').disabled);
+    el('btn-treino-arm').classList.toggle('concluido', el('btn-treino-arm').disabled);
+
+    el('btn-despertar-fruta').hidden = !(jogador.fruta && jogador.frutaPodeDespertar && !jogador.fruta.despertada);
+
+    const btnBoss = el('btn-boss-ilha');
+    const boss = bossAtualReal();
+    if (!boss || todasBatalhasDaIlhaConcluidas()) {
+        btnBoss.disabled = true;
+        btnBoss.hidden = true;
+        btnBoss.textContent = 'BOSS DA ILHA CONCLUÍDO';
+    } else {
+        btnBoss.hidden = false;
+        if (ilha.options?.evento === 'pudding' && boss.nome === 'Katakuri') {
+            btnBoss.disabled = false;
+            btnBoss.textContent = 'ESTRAGAR CASAMENTO DE PUDDING';
+        } else if (ilha.options?.evento === 'alabasta-trap' && !ilha.options.trapTriggered) {
+            btnBoss.disabled = false;
+            btnBoss.textContent = 'ENFRENTAR BOSS';
+        } else if (jogador.faccao === 'Marinha' && ilha.nome === 'Egghead') {
+            btnBoss.disabled = false;
+            btnBoss.textContent = boss.nome.startsWith('Vegapunk') ? `ELIMINAR ${boss.nome}` : 'CONTINUAR MISSÃO';
+        } else {
+            btnBoss.disabled = false;
+            btnBoss.textContent = `ENFRENTAR ${boss.nome}`;
         }
     }
 
+    let descricao = `Próximo passo: ${boss ? boss.nome : 'viajar quando quiser seguir a rota.'}`;
+    if (jogador.faccao === 'Marinha' && ilha.nome === 'Egghead') descricao = `Missão: eliminar os Vegapunks. Atual: ${boss ? boss.nome : 'concluída.'}`;
+    el('texto-progressao-ilha').textContent = descricao;
+}
+
+// ============================================================
+// AKUMA NO MI
+// ============================================================
+
+function escolherFrutaPorPeso() {
+    const total = frutas.reduce((soma, f) => soma + f.peso, 0);
+    let rolagem = Math.random() * total;
+    for (const frutaAtual of frutas) {
+        rolagem -= frutaAtual.peso;
+        if (rolagem <= 0) return frutaAtual;
+    }
     return frutas[0];
 }
 
 function procurarFruta() {
-    if (ilhaAtual.frutaBuscas <= 0) {
-        log(
-            '🍈 Você já procurou duas vezes nesta ilha. O jogo não vai fabricar uma terceira árvore do nada.'
-        );
-
+    if (ilhaAtual().buscasFruta <= 0) {
+        log('🍈 Você já fez as duas buscas de Akuma no Mi nesta ilha. Próxima chance só quando a rota avançar.');
         return;
     }
 
-    ilhaAtual.frutaBuscas--;
+    ilhaAtual().buscasFruta--;
+    el('count-fruta').textContent = ilhaAtual().buscasFruta;
 
-    el('count-fruta').textContent =
-        ilhaAtual.frutaBuscas;
-
-    let chance =
-        ilhaAtual.frutaChance;
-
-    if (jogador.raca === 'Mink') {
-        chance += 0.02;
-    }
-
-    if (jogador.faccao === 'Tenryuubito') {
-        chance = 1;
-    }
+    let chance = ilhaAtual().frutaChance;
+    if (jogador.raca === 'Mink') chance += 0.02;
+    if (jogador.faccao === 'Tenryuubito') chance = 1;
+    chance = clamped(chance, 0.02, 1);
 
     if (Math.random() >= chance) {
-        log(
-            'Você procurou por toda parte e só encontrou lixo, madeira e uma coisa que não devia estar se mexendo.'
-        );
-
+        log('🍂 Você procurou por toda parte e achou lixo, frutas comuns e uma coisa que preferiria não tocar.');
         return;
     }
 
-    const fruta =
-        escolherFrutaPorPeso();
-
-    mostrarEventoFruta(fruta);
+    const encontrada = escolherFrutaPorPeso();
+    mostrarEventoFruta(encontrada);
 }
 
-function mostrarEventoFruta(fruta) {
-    el('titulo-evento').textContent =
-        `${fruta.raridade.toUpperCase()} • AKUMA NO MI`;
-
-    el('nome-evento').textContent =
-        `Você encontrou a ${fruta.nome}!`;
-
-    el('desc-evento').textContent =
-        `Poder potencial: +${fruta.poder}. ${
-            fruta.raridade === 'Mítica'
-                ? 'Isso aqui é coisa de protagonista.'
-                : fruta.raridade === 'Lendária'
-                    ? 'A sorte deu uma piscada para você.'
-                    : 'Nada mal.'
-        }`;
-
-    el('img-evento').src =
-        fruta.img;
-
-    el('img-evento').onerror = () => {
-        el('img-evento').onerror = null;
-
-        el('img-evento').src =
-            `https://placehold.co/600x500/35233c/ffffff?text=${
-                encodeURIComponent(fruta.nome)
-            }`;
-    };
-
+function mostrarEventoFruta(frutaAtual) {
+    el('titulo-evento').textContent = `${frutaAtual.raridade.toUpperCase()} • AKUMA NO MI`;
+    el('nome-evento').textContent = `Você encontrou a ${frutaAtual.nome}!`;
+    el('desc-evento').textContent = frutaAtual.raridade === 'Mítica'
+        ? 'É a roleta que faz a tela ficar em silêncio por alguns segundos.'
+        : frutaAtual.raridade === 'Lendária'
+            ? 'Drop extremamente raro. Não pisca.'
+            : frutaAtual.raridade === 'Rara'
+                ? 'Fruta rara. O sistema não costuma entregar isso de graça.'
+                : 'Fruta comum, mas ainda pode virar uma build interessante.';
+    el('img-evento').src = frutaAtual.img;
     el('botoes-evento').innerHTML = '';
 
-    const comer =
-        document.createElement('button');
+    const comer = criarBotaoEvento(jogador.fruta ? 'NÃO POSSO COMER' : 'COMER FRUTA', img('COMER+FRUTA', '4b6a33'), () => comerFruta(frutaAtual));
+    comer.disabled = Boolean(jogador.fruta);
 
-    comer.className =
-        'btn-acao btn-primary';
+    const guardar = criarBotaoEvento('GUARDAR NO NAVIO', img('GUARDAR', '34516a'), () => guardarFruta(frutaAtual));
+    const jogarFora = criarBotaoEvento('JOGAR FORA', img('JOGAR+FORA', '5d2b2b'), () => {
+        log(`🗑️ Você jogou a ${frutaAtual.nome} fora.`);
+        mudarTela('tela-ilha');
+    });
 
-    comer.textContent =
-        jogador.fruta
-            ? 'NÃO POSSO COMER'
-            : 'COMER FRUTA';
-
-    comer.disabled =
-        Boolean(jogador.fruta);
-
-    comer.title =
-        jogador.fruta
-            ? 'Você já é usuário de uma Akuma no Mi.'
-            : 'Comer';
-
-    comer.onclick =
-        () => comerFruta(fruta);
-
-    const guardar =
-        document.createElement('button');
-
-    guardar.className =
-        'btn-acao';
-
-    guardar.textContent =
-        'GUARDAR NO NAVIO';
-
-    guardar.onclick =
-        () => guardarFruta(fruta);
-
-    el('botoes-evento')
-        .append(
-            comer,
-            guardar
-        );
-
+    el('botoes-evento').append(comer, guardar, jogarFora);
     mudarTela('tela-evento');
 }
 
-function comerFruta(fruta) {
+function comerFruta(frutaAtual) {
     if (jogador.fruta) {
-        log(
-            'Você já comeu uma Akuma no Mi. Duas seriam uma quantidade um pouco acima do recomendado pelo universo.'
-        );
-
+        log('Você já comeu uma Akuma no Mi. O jogo bloqueou a segunda.');
         return;
     }
 
-    jogador.fruta =
-        fruta;
-
-    jogador.inventario =
-        jogador.inventario.filter(
-            item => item.nome !== fruta.nome
-        );
-
-    log(
-        `🍈 Você comeu a ${fruta.nome}! Seus golpes de Akuma no Mi foram desbloqueados.`
-    );
-
+    jogador.fruta = frutaAtual;
+    jogador.inventario = jogador.inventario.filter(f => f !== frutaAtual);
+    log(`🍈 Você comeu a ${frutaAtual.nome}! Os ataques da fruta estão disponíveis nas batalhas.`);
     atualizarCartaz();
-    montarListaAliados();
-    montarInventarioFrutas();
-
-    setTimeout(
-        () => mudarTela('tela-ilha'),
-        650
-    );
+    setTimeout(() => carregarTelaDaIlha(), 500);
 }
 
-function guardarFruta(fruta) {
-    jogador.inventario.push(fruta);
-
-    log(
-        `🍈 Você guardou a ${fruta.nome} no navio. Agora pode oferecer a um aliado.`
-    );
-
+function guardarFruta(frutaAtual) {
+    jogador.inventario.push(frutaAtual);
+    log(`🍈 A ${frutaAtual.nome} foi guardada no navio. Você pode oferecê-la a um aliado.`);
     montarInventarioFrutas();
-
-    setTimeout(
-        () => mudarTela('tela-ilha'),
-        650
-    );
+    setTimeout(() => carregarTelaDaIlha(), 500);
 }
 
-// ------------------------------------------------------------
-// ESTILOS
-// ------------------------------------------------------------
+function despertarFruta() {
+    if (!jogador.fruta || !jogador.frutaPodeDespertar || jogador.fruta.despertada) {
+        log('O despertar da fruta ainda não está disponível.');
+        return;
+    }
+
+    jogador.fruta.despertada = true;
+    jogador.frutaPodeDespertar = false;
+    jogador.maestriaFruta = Math.max(jogador.maestriaFruta, 10);
+    jogador.poderBase += 25;
+    log(`🌟 A ${jogador.fruta.nome} foi DESPERTADA! Os ataques da fruta receberam um grande aumento.`);
+    atualizarCartaz();
+    atualizarBotoesIlha();
+}
+
+// ============================================================
+// ESTILOS E RECUSA DO KARATÊ
+// ============================================================
 
 function procurarEstilo() {
-    if (!ilhaAtual.estiloBuscaDisponivel) {
-        log(
-            'Você já procurou um mestre nesta ilha. Ele foi embora dizendo que você fala demais.'
-        );
-
+    if (!ilhaAtual().estiloBuscaDisponivel) {
+        log('Você já procurou um mestre nesta ilha. Não dá para repetir.');
         return;
     }
 
-    ilhaAtual.estiloBuscaDisponivel =
-        false;
-
-    let candidatos =
-        estilos.filter(estilo => {
-            if (
-                estilo.nome !==
-                'Karatê dos Homens-Peixe'
-            ) {
-                return true;
-            }
-
-            return !jogador.fruta;
-        });
-
-    if (
-        jogador.raca === 'Homem-Peixe' &&
-        !jogador.fruta
-    ) {
-        candidatos =
-            candidatos.filter(
-                e =>
-                    e.nome ===
-                    'Karatê dos Homens-Peixe' ||
-                    Math.random() < 0.55
-            );
-    }
-
-    const sucesso =
-        Math.random() < 0.80;
-
-    if (
-        !sucesso ||
-        candidatos.length === 0
-    ) {
-        log(
-            'Você procurou um mestre e achou apenas um senhor vendendo peixe. Treino cancelado.'
-        );
-
-        ilhaAtual.estiloBuscaDisponivel =
-            false;
-
+    if (jogador.estiloLuta) {
+        log(`Você já aprendeu ${jogador.estiloLuta}. Procurar outro mestre agora não é permitido nesta aventura.`);
         return;
     }
 
-    const estilo =
-        randomItem(candidatos);
+    ilhaAtual().estiloBuscaDisponivel = false;
 
-    jogador.estiloLuta =
-        estilo.nome;
+    let candidatos = estilos.filter(estilo => !(estilo.bloqueadoComFruta && jogador.fruta));
+    if (jogador.raca === 'Homem-Peixe' && !jogador.fruta) {
+        const fishman = estilos.find(s => s.nome === 'Karatê dos Homens-Peixe');
+        if (fishman && Math.random() < 0.65) candidatos = [fishman];
+    }
 
-    jogador.maestriaEstilo =
-        Math.max(
-            jogador.maestriaEstilo,
-            jogador.raca === 'Homem-Peixe' &&
-            estilo.nome === 'Karatê dos Homens-Peixe'
-                ? 2
-                : 0
-        );
+    if (!candidatos.length) {
+        log('Você não encontrou um estilo compatível com sua situação atual.');
+        return;
+    }
 
-    log(
-        `⚔ Mestre encontrado! Você aprendeu ${estilo.nome}. Agora você pode treinar a maestria do estilo.`
-    );
+    const estilo = randomItem(candidatos);
 
-    atualizarCartaz();
+    el('titulo-evento').textContent = 'MESTRE ENCONTRADO';
+    el('nome-evento').textContent = estilo.nome;
+    el('desc-evento').textContent = `${estilo.descricao} Você quer aceitar esse treinamento? Recusar significa RECUSAR, de verdade.`;
+    el('img-evento').src = estilo.img;
+    el('botoes-evento').innerHTML = '';
 
-    abrirMinigameEstilo();
+    const aceitar = criarBotaoEvento(`APRENDER ${estilo.nome.toUpperCase()}`, estilo.img, () => {
+        jogador.estiloLuta = estilo.nome;
+        jogador.maestriaEstilo = 0;
+        log(`⚔ Você aceitou o estilo ${estilo.nome}. Agora treine a maestria.`);
+        atualizarCartaz();
+        abrirMinigameEstilo();
+    });
+
+    const recusar = criarBotaoEvento('RECUSAR ESTILO', img('RECUSAR', '5c2a2a'), () => {
+        log(`🚫 Você recusou ${estilo.nome}. O sistema NÃO vai registrar esse estilo. Nadar de boas e segue a vida.`);
+        mudarTela('tela-ilha');
+        atualizarBotoesIlha();
+    });
+
+    el('botoes-evento').append(aceitar, recusar);
+    mudarTela('tela-evento');
 }
 
 function abrirMinigameEstilo() {
-    mgTipo = 'estilo';
+    mgConfig('estilo');
+    el('titulo-minigame').textContent = `Treino de ${jogador.estiloLuta}`;
+    el('instrucao-minigame').textContent = 'Pressione a sequência de teclas exibida o mais rápido possível. Você só ganha maestria se completar o treino.';
+    el('obs-minigame').hidden = true;
+    el('arm-minigame').hidden = true;
+    el('nota-treino').hidden = true;
+    el('btn-acao-minigame').hidden = false;
+    el('btn-tentar-novamente').hidden = true;
+    el('btn-acao-minigame').textContent = 'COMEÇAR SEQUÊNCIA';
+    el('btn-acao-minigame').onmousedown = iniciarSequenciaEstilo;
+    el('btn-acao-minigame').ontouchstart = iniciarSequenciaEstilo;
 
-    minigameAtivo = true;
-
-    cancelarLoopsMinigame();
-
-    el('titulo-minigame').textContent =
-        `Treino de ${jogador.estiloLuta}`;
-
-    el('instrucao-minigame').textContent =
-        'Pressione a sequência exibida o mais rápido que conseguir. O resultado vira sua maestria do estilo (0–10).';
-
-    el('obs-minigame').hidden =
-        true;
-
-    el('arm-minigame').hidden =
-        true;
-
-    el('timer-minigame').hidden =
-        true;
-
-    el('nota-treino').hidden =
-        true;
-
-    el('btn-acao-minigame').textContent =
-        'COMEÇAR SEQUÊNCIA';
-
-    el('btn-acao-minigame').onmousedown =
-        iniciarSequenciaEstilo;
-
-    el('btn-acao-minigame').ontouchstart =
-        iniciarSequenciaEstilo;
-
-    el('btn-tentar-novamente').hidden =
-        true;
-
-    el('instrucao-minigame').dataset.sequencia =
-        gerarSequencia();
-
-    el('instrucao-minigame').textContent +=
-        `\n\nSequência: ${el('instrucao-minigame').dataset.sequencia}`;
-
+    const seq = randomItem(['A S D W', 'W D A S', 'A D S A', 'S W D A']);
+    el('instrucao-minigame').dataset.sequencia = seq;
+    el('instrucao-minigame').textContent += `\n\nSEQUÊNCIA: ${seq}`;
     mudarTela('tela-minigame');
 }
 
-function gerarSequencia() {
-    return randomItem([
-        'A S D W',
-        'W D A S',
-        'A D S A',
-        'S W D A'
-    ]);
-}
+let estiloInicio = 0;
+let estiloHandler = null;
 
 function iniciarSequenciaEstilo() {
-    if (
-        !minigameAtivo ||
-        mgTipo !== 'estilo'
-    ) {
-        return;
-    }
-
-    const inicio =
-        performance.now();
-
-    const alvo =
-        el('instrucao-minigame')
-            .dataset
-            .sequencia
-            .split(' ');
-
+    if (mgTipo !== 'estilo') return;
+    estiloInicio = performance.now();
+    const alvo = el('instrucao-minigame').dataset.sequencia.split(' ');
     let indice = 0;
+    el('btn-acao-minigame').hidden = true;
 
-    el('btn-acao-minigame').hidden =
-        true;
-
-    const handler = event => {
-        const tecla =
-            event.key.toUpperCase();
-
-        if (
-            tecla !== alvo[indice]
-        ) {
-            window.removeEventListener(
-                'keydown',
-                handler
-            );
-
-            finalizarTreinoEstilo(
-                2,
-                false,
-                inicio
-            );
-
+    if (estiloHandler) window.removeEventListener('keydown', estiloHandler);
+    estiloHandler = event => {
+        const tecla = event.key.toUpperCase();
+        if (tecla !== alvo[indice]) {
+            window.removeEventListener('keydown', estiloHandler);
+            estiloHandler = null;
+            finalizarTreinoEstilo(2, false);
             return;
         }
-
         indice++;
-
         if (indice >= alvo.length) {
-            window.removeEventListener(
-                'keydown',
-                handler
-            );
-
-            const tempo =
-                performance.now() -
-                inicio;
-
-            const nota =
-                Math.max(
-                    1,
-                    Math.min(
-                        10,
-                        Math.round(
-                            10 -
-                            tempo / 900
-                        )
-                    )
-                );
-
-            finalizarTreinoEstilo(
-                nota,
-                nota >= 5,
-                inicio
-            );
+            window.removeEventListener('keydown', estiloHandler);
+            estiloHandler = null;
+            const tempo = performance.now() - estiloInicio;
+            const nota = clamped(Math.round(10 - tempo / 850), 1, 10);
+            finalizarTreinoEstilo(nota, nota >= 5);
         }
     };
-
-    window.addEventListener(
-        'keydown',
-        handler
-    );
+    window.addEventListener('keydown', estiloHandler);
 }
 
-function finalizarTreinoEstilo(
-    nota,
-    acertou
-) {
+function finalizarTreinoEstilo(nota, acertou) {
     minigameAtivo = false;
+    el('btn-acao-minigame').hidden = false;
+    el('btn-tentar-novamente').hidden = acertou;
+    mostrarNotaTreino(nota, 'estilo', acertou);
+    log(acertou ? `⚔ Maestria de ${jogador.estiloLuta} aumentou.` : '❌ Você errou a sequência. Pode tentar de novo porque o treino não foi concluído.');
+}
 
-    el('btn-acao-minigame').hidden =
-        false;
+function mostrarNotaTreino(nota, tipo, acertou) {
+    const caixa = el('nota-treino');
+    caixa.hidden = false;
+    caixa.textContent = `NOTA ${nota}/10 • ${acertou ? 'TREINO CONCLUÍDO' : 'TREINO FALHOU'}`;
 
-    el('btn-tentar-novamente').hidden =
-        !(!acertou);
+    if (!acertou) return;
 
-    mostrarNotaTreino(
-        nota,
-        'estilo',
-        acertou
-    );
-
-    log(
-        acertou
-            ? `⚔ Maestria de ${jogador.estiloLuta} aumentou!`
-            : '❌ Você errou a sequência. Tente novamente.'
-    );
-
-    if (acertou) {
-        montarPainelAtaques();
+    if (tipo === 'obs' || tipo === 'arm') {
+        marcarTreinamento(tipo);
+        const ganho = clamped(Math.ceil(nota / 2), 1, 5);
+        if (tipo === 'obs') jogador.haki.obs = clamped(jogador.haki.obs + ganho, 0, 30);
+        if (tipo === 'arm') jogador.haki.arm = clamped(jogador.haki.arm + ganho, 0, 30);
+    } else if (tipo === 'estilo') {
+        jogador.maestriaEstilo = clamped(jogador.maestriaEstilo + clamped(Math.ceil(nota / 2), 1, 5), 0, 10);
     }
+
+    atualizarCartaz();
+    atualizarBotoesIlha();
+}
+
+// ============================================================
+// MINIGAMES DE HAKI
+// ============================================================
+
+let minigameLoop = null;
+let minigameAtivo = false;
+let mgTipo = '';
+let mgPos = 0;
+let mgDir = 1;
+let mgTargetPos = 0;
+let segurandoArm = false;
+let tempoArmamento = 5;
+let intervaloTimer = null;
+
+function mgConfig(tipo) {
+    mgTipo = tipo;
+    minigameAtivo = true;
+    cancelarLoopsMinigame();
+    segurandoArm = false;
 }
 
 function abrirMinigame(tipo) {
-    if (tipo === 'rei') {
-        treinarRei();
+    if (tipo === 'rei') return;
+
+    if (treinamentoConcluido(tipo)) {
+        log(`Você já concluiu o treinamento de ${tipo === 'obs' ? 'Observação' : 'Armamento'} nesta ilha. Não pode repetir até avançar para outra ilha.`);
         return;
     }
 
-    if (tipo === 'estilo') {
-        abrirMinigameEstilo();
+    if ((tipo === 'obs' && jogador.haki.obs >= 30) || (tipo === 'arm' && jogador.haki.arm >= 30)) {
+        log('Seu Haki já atingiu 30/30. O treino não pode passar do limite.');
         return;
     }
 
-    mgTipo = tipo;
-    minigameAtivo = true;
-
-    cancelarLoopsMinigame();
-
-    segurandoArm = false;
-
-    el('nota-treino').hidden =
-        true;
-
-    el('btn-tentar-novamente').hidden =
-        true;
-
-    el('btn-acao-minigame').hidden =
-        false;
-
-    el('btn-acao-minigame').onmousedown =
-        acaoMinigameDown;
-
-    el('btn-acao-minigame').onmouseup =
-        acaoMinigameUp;
-
-    el('btn-acao-minigame').ontouchstart =
-        acaoMinigameDown;
-
-    el('btn-acao-minigame').ontouchend =
-        acaoMinigameUp;
+    mgConfig(tipo);
+    el('nota-treino').hidden = true;
+    el('btn-tentar-novamente').hidden = true;
+    el('btn-acao-minigame').hidden = false;
+    el('btn-acao-minigame').onmousedown = acaoMinigameDown;
+    el('btn-acao-minigame').onmouseup = acaoMinigameUp;
+    el('btn-acao-minigame').ontouchstart = acaoMinigameDown;
+    el('btn-acao-minigame').ontouchend = acaoMinigameUp;
 
     if (tipo === 'obs') {
-        el('titulo-minigame').textContent =
-            'Haki da Observação';
-
-        el('instrucao-minigame').textContent =
-            'A mira atravessa a tela rapidamente. Aperte AÇÃO/ESPAÇO quando o centro da mira estiver sobre a zona verde.';
-
-        el('obs-minigame').hidden =
-            false;
-
-        el('arm-minigame').hidden =
-            true;
-
-        el('timer-minigame').hidden =
-            true;
-
+        el('titulo-minigame').textContent = 'Haki da Observação';
+        el('instrucao-minigame').textContent = 'A mira passa muito rápido. Aperte AÇÃO/ESPAÇO quando o centro da mira coincidir com o alvo.';
+        el('obs-minigame').hidden = false;
+        el('arm-minigame').hidden = true;
         mgPos = 0;
-
-        mgDir =
-            jogador.haki.obs >= 5
-                ? 14
-                : 18;
-
+        mgDir = jogador.haki.obs >= 15 ? 20 : 15;
         moverAlvoObs();
-
         loopObs();
     }
 
-    else if (tipo === 'arm') {
-        el('titulo-minigame').textContent =
-            'Haki do Armamento';
-
-        el('instrucao-minigame').textContent =
-            'A agulha é pesada de propósito. Segure AÇÃO/ESPAÇO para empurrá-la. Solte na zona verde antes do tempo acabar.';
-
-        el('obs-minigame').hidden =
-            true;
-
-        el('arm-minigame').hidden =
-            false;
-
-        el('timer-minigame').hidden =
-            false;
-
+    if (tipo === 'arm') {
+        el('titulo-minigame').textContent = 'Haki do Armamento';
+        el('instrucao-minigame').textContent = 'A agulha é pesada de propósito. Segure AÇÃO/ESPAÇO para empurrar e solte na zona verde. Soltar fora falha.';
+        el('obs-minigame').hidden = true;
+        el('arm-minigame').hidden = false;
         tempoArmamento = 5;
-
-        el('timer-minigame').textContent =
-            tempoArmamento;
-
+        el('timer-minigame').textContent = tempoArmamento;
         mgPos = 0;
-
-        document.documentElement.style.setProperty(
-            '--dummy',
-            '1'
-        );
-
         loopArm();
-
-        intervaloTimer =
-            setInterval(() => {
-                if (!minigameAtivo) {
-                    clearInterval(
-                        intervaloTimer
-                    );
-
-                    return;
-                }
-
-                tempoArmamento--;
-
-                el('timer-minigame').textContent =
-                    tempoArmamento;
-
-                if (
-                    tempoArmamento <= 0
-                ) {
-                    validarMinigameArm();
-                }
-            }, 1000);
+        intervaloTimer = setInterval(() => {
+            if (!minigameAtivo || mgTipo !== 'arm') return;
+            tempoArmamento--;
+            el('timer-minigame').textContent = tempoArmamento;
+            if (tempoArmamento <= 0) validarMinigameArm();
+        }, 1000);
     }
 
     mudarTela('tela-minigame');
 }
 
 function moverAlvoObs() {
-    const stage =
-        el('obs-stage');
-
-    const alvo =
-        el('obs-target');
-
-    if (!stage || !alvo) {
-        return;
-    }
-
+    const stage = el('obs-stage');
+    const alvo = el('obs-target');
+    if (!stage || !alvo) return;
     const margem = 10;
-
-    const maxX =
-        Math.max(
-            margem,
-            stage.clientWidth -
-            alvo.offsetWidth -
-            margem
-        );
-
-    mgTargetPos =
-        margem +
-        Math.random() *
-        maxX;
-
-    alvo.style.left =
-        `${mgTargetPos}px`;
+    const maxX = Math.max(margem, stage.clientWidth - alvo.offsetWidth - margem);
+    mgTargetPos = margem + Math.random() * maxX;
+    alvo.style.left = `${mgTargetPos}px`;
 }
 
 function loopObs() {
-    if (
-        !minigameAtivo ||
-        mgTipo !== 'obs'
-    ) {
-        return;
-    }
+    if (!minigameAtivo || mgTipo !== 'obs') return;
+    const stage = el('obs-stage');
+    const cross = el('obs-crosshair');
+    const target = el('obs-target');
+    if (!stage || !cross || !target) return;
 
-    const stage =
-        el('obs-stage');
-
-    const cross =
-        el('obs-crosshair');
-
-    if (!stage || !cross) {
-        return;
-    }
-
-    const maxX =
-        stage.clientWidth -
-        28;
-
+    const maxX = Math.max(10, stage.clientWidth - 34);
     mgPos += mgDir;
-
-    if (
-        mgPos >= maxX ||
-        mgPos <= 0
-    ) {
-        mgDir *= -1;
-    }
-
-    cross.style.left =
-        `${mgPos}px`;
-
-    minigameLoop =
-        requestAnimationFrame(
-            loopObs
-        );
+    if (mgPos >= maxX || mgPos <= 0) mgDir *= -1;
+    cross.style.left = `${mgPos}px`;
+    minigameLoop = requestAnimationFrame(loopObs);
 }
 
 function loopArm() {
-    if (
-        !minigameAtivo ||
-        mgTipo !== 'arm'
-    ) {
-        return;
-    }
+    if (!minigameAtivo || mgTipo !== 'arm') return;
+    const needle = el('arm-needle');
+    const stage = document.querySelector('.heavy-stage');
+    if (!needle || !stage) return;
 
-    const needle =
-        el('arm-needle');
-
-    const stage =
-        el('arm-minigame');
-
-    if (!needle || !stage) {
-        return;
-    }
-
-    const maxX =
-        Math.max(
-            0,
-            stage.clientWidth - 24
-        );
+    const maxX = Math.max(0, stage.clientWidth - 22);
 
     if (segurandoArm) {
-        // Pesado: demora para subir e sofre pequenas oscilações.
-        mgPos +=
-            2.15 +
-            Math.random() * 0.75;
+        // PESADA: sobe devagar e treme.
+        mgPos += 1.5 + Math.random() * 0.8;
+        mgPos += Math.random() * 1.3 - 0.65;
+    } else {
+        // Soltou: cai rápido.
+        mgPos -= 7.2;
     }
 
-    else {
-        // Soltou? A força despenca.
-        mgPos -= 5.6;
-    }
-
-    mgPos =
-        Math.max(
-            0,
-            Math.min(
-                maxX,
-                mgPos
-            )
-        );
-
-    needle.style.left =
-        `${mgPos}px`;
-
-    minigameLoop =
-        requestAnimationFrame(
-            loopArm
-        );
+    mgPos = clamped(mgPos, 0, maxX);
+    needle.style.left = `${mgPos}px`;
+    minigameLoop = requestAnimationFrame(loopArm);
 }
 
 function acaoMinigameDown(event) {
-    if (
-        event &&
-        event.type === 'mousedown' &&
-        event.button !== 0
-    ) {
-        return;
-    }
+    if (event && event.type === 'mousedown' && event.button !== 0) return;
+    if (!minigameAtivo) return;
 
-    if (!minigameAtivo) {
-        return;
-    }
-
-    if (mgTipo === 'obs') {
-        validarMinigameObs();
-    }
-
-    else if (mgTipo === 'arm') {
-        segurandoArm = true;
-    }
+    if (mgTipo === 'obs') validarMinigameObs();
+    if (mgTipo === 'arm') segurandoArm = true;
 }
 
 function acaoMinigameUp() {
-    if (
-        mgTipo === 'arm' &&
-        minigameAtivo
-    ) {
+    if (mgTipo === 'arm' && minigameAtivo) {
         segurandoArm = false;
-
         validarMinigameArm();
     }
 }
 
 function validarMinigameObs() {
-    if (
-        !minigameAtivo ||
-        mgTipo !== 'obs'
-    ) {
-        return;
-    }
+    if (!minigameAtivo || mgTipo !== 'obs') return;
 
-    const targetCenter =
-        mgTargetPos + 46;
-
-    const crossCenter =
-        mgPos + 14;
-
-    const distancia =
-        Math.abs(
-            targetCenter -
-            crossCenter
-        );
-
-    let nota =
-        Math.round(
-            10 -
-            distancia / 18
-        );
-
-    nota =
-        Math.max(
-            0,
-            Math.min(
-                10,
-                nota
-            )
-        );
+    const targetCenter = mgTargetPos + 42;
+    const crossCenter = mgPos + 16;
+    const distancia = Math.abs(targetCenter - crossCenter);
+    let nota = Math.round(10 - distancia / 17);
+    nota = clamped(nota, 0, 10);
 
     minigameAtivo = false;
-
     cancelarLoopsMinigame();
 
-    const acertou =
-        nota >= 5;
-
-    mostrarNotaTreino(
-        nota,
-        'obs',
-        acertou
-    );
-
-    log(
-        acertou
-            ? `👁 Você previu o movimento. Haki da Observação subiu para ${jogador.haki.obs}/10.`
-            : '❌ Timing ruim. O alvo passou e sua previsão foi para Nárnia.'
-    );
-
-    if (!acertou) {
-        el('btn-tentar-novamente').hidden =
-            false;
+    const acertou = nota >= 5;
+    mostrarNotaTreino(nota, 'obs', acertou);
+    if (acertou) {
+        log(`👁 Previsão perfeita. Haki da Observação: ${jogador.haki.obs}/30.`);
+    } else {
+        log('❌ Você errou o timing. O treino não foi concluído, então poderá tentar novamente.');
+        el('btn-tentar-novamente').hidden = false;
     }
 }
 
 function validarMinigameArm() {
-    if (
-        !minigameAtivo ||
-        mgTipo !== 'arm'
-    ) {
-        return;
-    }
+    if (!minigameAtivo || mgTipo !== 'arm') return;
 
     minigameAtivo = false;
-
     cancelarLoopsMinigame();
 
-    const stageWidth =
-        el('arm-minigame')
-            .clientWidth;
+    const stage = document.querySelector('.heavy-stage');
+    const zona = el('arm-zone');
+    const zonaInicio = stage.clientWidth * 0.44;
+    const zonaFim = zonaInicio + zona.offsetWidth;
+    const centroAgulha = mgPos + 11;
+    const distancia = centroAgulha < zonaInicio ? zonaInicio - centroAgulha : centroAgulha > zonaFim ? centroAgulha - zonaFim : 0;
+    let nota = Math.round(10 - distancia / 17);
+    nota = clamped(nota, 0, 10);
 
-    const zonaInicio =
-        stageWidth * 0.43;
-
-    const zonaFim =
-        zonaInicio + 90;
-
-    const centroAgulha =
-        mgPos + 11;
-
-    const distancia =
-        centroAgulha < zonaInicio
-            ? zonaInicio -
-              centroAgulha
-            : centroAgulha > zonaFim
-                ? centroAgulha -
-                  zonaFim
-                : 0;
-
-    let nota =
-        Math.round(
-            10 -
-            distancia / 16
-        );
-
-    nota =
-        Math.max(
-            0,
-            Math.min(
-                10,
-                nota
-            )
-        );
-
-    const acertou =
-        nota >= 5;
-
-    mostrarNotaTreino(
-        nota,
-        'arm',
-        acertou
-    );
-
-    log(
-        acertou
-            ? `✊ Endurecimento perfeito! Haki do Armamento subiu para ${jogador.haki.arm}/10.`
-            : '❌ O Haki desfez antes da agulha chegar à zona certa.'
-    );
-
-    if (!acertou) {
-        el('btn-tentar-novamente').hidden =
-            false;
-
-        el('btn-acao-minigame').hidden =
-            false;
+    const acertou = nota >= 5;
+    mostrarNotaTreino(nota, 'arm', acertou);
+    if (acertou) {
+        log(`✊ Endurecimento concluído. Haki do Armamento: ${jogador.haki.arm}/30.`);
+    } else {
+        log('❌ A agulha caiu fora da zona. O Armamento não foi concluído.');
+        el('btn-tentar-novamente').hidden = false;
     }
 }
 
 function recomecarMinigame() {
-    abrirMinigame(mgTipo);
+    if (mgTipo === 'estilo') abrirMinigameEstilo();
+    else abrirMinigame(mgTipo);
 }
 
 function fecharMinigame() {
     minigameAtivo = false;
-
     segurandoArm = false;
-
     cancelarLoopsMinigame();
-
-    mudarTela('tela-ilha');
+    if (estiloHandler) {
+        window.removeEventListener('keydown', estiloHandler);
+        estiloHandler = null;
+    }
+    carregarTelaDaIlha();
 }
 
 function cancelarLoopsMinigame() {
-    if (minigameLoop) {
-        cancelAnimationFrame(
-            minigameLoop
-        );
-    }
-
+    if (minigameLoop) cancelAnimationFrame(minigameLoop);
     minigameLoop = null;
-
-    if (intervaloTimer) {
-        clearInterval(
-            intervaloTimer
-        );
-    }
-
+    if (intervaloTimer) clearInterval(intervaloTimer);
     intervaloTimer = null;
 }
 
-// ------------------------------------------------------------
-// ESPAÇO NOS MINIGAMES
-// ------------------------------------------------------------
+window.addEventListener('keydown', event => {
+    if (event.code !== 'Space') return;
+    const telaVisivel = !el('tela-minigame').classList.contains('tela-oculta');
+    if (!telaVisivel || !minigameAtivo || mgTipo === 'estilo') return;
+    event.preventDefault();
+    if (!event.repeat) acaoMinigameDown(event);
+});
 
-window.addEventListener(
-    'keydown',
-    event => {
-        if (event.code !== 'Space') {
-            return;
-        }
+window.addEventListener('keyup', event => {
+    if (event.code !== 'Space') return;
+    if (!minigameAtivo || mgTipo !== 'arm') return;
+    event.preventDefault();
+    acaoMinigameUp();
+});
 
-        const telaMinigameVisivel =
-            !el('tela-minigame')
-                .classList
-                .contains('tela-oculta');
-
-        if (
-            !telaMinigameVisivel ||
-            !minigameAtivo ||
-            mgTipo === 'estilo'
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        if (!event.repeat) {
-            acaoMinigameDown(event);
-        }
-    }
-);
-
-window.addEventListener(
-    'keyup',
-    event => {
-        if (event.code !== 'Space') {
-            return;
-        }
-
-        if (
-            !minigameAtivo ||
-            mgTipo !== 'arm'
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        acaoMinigameUp();
-    }
-);
-
-// ------------------------------------------------------------
+// ============================================================
 // HAKI DO REI
-// ------------------------------------------------------------
+// ============================================================
 
-function treinarRei() {
-    if (!jogador.haki.rei) {
-        log(
-            'Você não nasceu com Haki do Rei. Esse botão não é um passe VIP.'
-        );
+function tentarDespertarHakiReiNaturalmente() {
+    if (!jogador.haki.rei || jogador.haki.reiEstado !== 'Adormecido') return false;
+    const boss = bossAtualReal();
+    if (!boss) return false;
 
-        return;
+    // Sem botão: o despertar é automático e só acontece no calor da luta.
+    const muitoDificil = boss.extremo || boss.despertarRei;
+    const condicaoFisica = jogador.vida <= jogador.vidaMaxima * 0.40 || estado.bossHP <= boss.hpMax * 0.35;
+    const chance = muitoDificil && condicaoFisica ? 0.28 : 0.03;
+
+    if (Math.random() < chance) {
+        despertarHakiRei();
+        return true;
     }
-
-    if (
-        jogador.haki.reiEstado ===
-        'Despertado!'
-    ) {
-        log(
-            '👑 Seu Haki do Rei já está desperto. Agora você só precisa não se achar demais.'
-        );
-
-        return;
-    }
-
-    jogador.haki.reiEstado =
-        'Despertado!';
-
-    atualizarCartaz();
-
-    log(
-        '👑 Seu Haki do Conquistador despertou! A presença ficou assustadora.'
-    );
+    return false;
 }
 
-// ------------------------------------------------------------
+function despertarHakiRei() {
+    if (!jogador.haki.rei || jogador.haki.reiEstado === 'Despertado!') return;
+    jogador.haki.reiEstado = 'Despertado!';
+    jogador.haki.reiValor = 30;
+    jogador.haki.reiMax = 50;
+    atualizarCartaz();
+    mostrarBotaoHakiRei();
+    logBatalha('👑 Uma pressão absurda tomou o campo. Seu HAKI DO REI DESPERTOU no meio da batalha!');
+}
+
+function mostrarBotaoHakiRei() {
+    if (jogador.haki.reiEstado !== 'Despertado!') {
+        el('btn-buff-rei').hidden = true;
+        return;
+    }
+    el('btn-buff-rei').hidden = false;
+}
+
+// ============================================================
 // ALIADOS
-// ------------------------------------------------------------
+// ============================================================
+
+function chanceAliadoDaIlha() {
+    const opts = ilhaAtual().options || {};
+    if (opts.homemPeixeAliado != null) return opts.homemPeixeAliado;
+    if (opts.aliadoGigante != null) return opts.aliadoGigante;
+    if (opts.aliadoChance != null) return opts.aliadoChance;
+    return 0.35;
+}
 
 function procurarAliado() {
-    if (
-        !ilhaAtual.aliadoBuscaDisponivel
-    ) {
-        log(
-            'Você já procurou um aliado nesta ilha. O porto está sem currículos novos.'
-        );
+    const opts = ilhaAtual().options || {};
+    if (opts.aliadoBuscaDisponivel === false) {
+        log('Você já procurou um aliado nesta ilha.');
+        return;
+    }
+    opts.aliadoBuscaDisponivel = false;
 
+    if (Math.random() > chanceAliadoDaIlha()) {
+        log('👥 Você procurou alguém para recrutar, mas ninguém quis entrar no barco.');
         return;
     }
 
-    ilhaAtual.aliadoBuscaDisponivel =
-        false;
+    let raca = randomItem(racas).nome;
+    if (opts.homemPeixeAliado && Math.random() < opts.homemPeixeAliado) raca = 'Homem-Peixe';
+    if (opts.aliadoGigante && Math.random() < opts.aliadoGigante) raca = 'Gigante';
 
-    if (Math.random() > 0.65) {
-        log(
-            'Você procurou um tripulante e encontrou... silêncio absoluto. Ninguém quis entrar.'
-        );
-
-        return;
-    }
-
-    const base =
-        randomItem(aliadosBase);
+    const carpinteiro = opts.carpinteiros && Math.random() < opts.carpinteiros;
+    const estiloFishman = opts.estiloFishman && raca === 'Homem-Peixe' && Math.random() < opts.estiloFishman;
 
     const aliado = {
-        nome:
-            randomItem(nomesAliados),
-
-        poder:
-            base.poder,
-
-        chanceFruta:
-            base.chanceFruta,
-
+        nome: carpinteiro ? 'Carpinteiro de Water 7' : estiloFishman ? 'Mestre do Karatê dos Homens-Peixe' : randomItem(nomesAliados),
+        raca,
+        poder: carpinteiro ? 15 : raca === 'Gigante' ? 26 : raca === 'Homem-Peixe' ? 13 : 7 + Math.floor(Math.random() * 8),
         fruta: null,
-
         recusouFrutas: false,
-
-        aceitouFruta: false
+        aceitouFruta: false,
+        ataqueUsadoNaRodada: false
     };
 
-    jogador.aliados.push(
-        aliado
-    );
+    jogador.aliados.push(aliado);
+
+    if (jogador.raca === 'Homem-Peixe' && raca === 'Humano' && ilhaAtual().nome === 'Ilha dos Homens-Peixe') {
+        jogador.recompensa += 100000;
+        log('😂 ROGER! Você tirou um humano numa ilha onde 99,9% dos aliados deveriam ser Homens-Peixe. Que sorte absurda.');
+    } else {
+        log(`👥 ${aliado.nome} entrou para sua tripulação.`);
+    }
 
     atualizarPoder();
     montarListaAliados();
-
-    log(
-        `👥 ${aliado.nome} entrou na sua tripulação!`
-    );
+    atualizarCartaz();
 }
 
 function abrirAliados() {
     montarListaAliados();
-
     montarInventarioFrutas();
-
     mudarTela('tela-aliados');
 }
 
 function montarListaAliados() {
-    const lista =
-        el('lista-aliados');
-
+    const lista = el('lista-aliados');
+    if (!lista) return;
     lista.innerHTML = '';
+    el('contador-tripulacao').textContent = `Tripulação: ${jogador.aliados.length}`;
 
-    el('contador-tripulacao').textContent =
-        `Tripulação: ${jogador.aliados.length}`;
-
-    if (
-        jogador.aliados.length === 0
-    ) {
-        lista.innerHTML =
-            '<div class="empty-card">Nenhum aliado ainda. Aperte “PROCURAR ALIADO” e torça para alguém tolerar sua presença.</div>';
-
+    if (!jogador.aliados.length) {
+        lista.innerHTML = '<div class="empty-card">Nenhum aliado ainda. Procure alguém no porto.</div>';
         return;
     }
 
-    jogador.aliados.forEach(
-        (aliado, index) => {
-            const card =
-                document.createElement(
-                    'div'
-                );
+    jogador.aliados.forEach((aliado, index) => {
+        const card = document.createElement('div');
+        card.className = 'ally-card';
+        const avatar = document.createElement('img');
+        avatar.className = 'ally-avatar';
+        avatar.src = img(aliado.raca === 'Gigante' ? 'GIGANTE' : aliado.nome.split(' ')[0].toUpperCase(), '263c4e', 200, 200);
+        avatar.alt = aliado.nome;
 
-            card.className =
-                'ally-card';
+        const body = document.createElement('div');
+        body.innerHTML = `<div class="ally-name">${aliado.nome}</div><div class="ally-meta">Raça: ${aliado.raca}<br>Poder: +${aliado.poder}<br>${aliado.fruta ? `Fruta: ${aliado.fruta.nome}` : aliado.recusouFrutas ? 'Recusa frutas permanentemente' : 'Pode receber uma fruta'}</div>`;
 
-            const avatar =
-                document.createElement(
-                    'img'
-                );
-
-            avatar.className =
-                'ally-avatar';
-
-            avatar.src =
-                `https://placehold.co/200x200/263c4e/ffffff?text=${
-                    encodeURIComponent(
-                        aliado.nome
-                            .split(' ')[0]
-                    )
-                }`;
-
-            avatar.alt =
-                aliado.nome;
-
-            const body =
-                document.createElement(
-                    'div'
-                );
-
-            const statusFruta =
-                aliado.fruta
-                    ? `Comeu: ${aliado.fruta.nome}`
-                    : aliado.recusouFrutas
-                        ? 'Recusa qualquer Akuma no Mi'
-                        : 'Ainda pode receber uma fruta';
-
-            body.innerHTML =
-                `<div class="ally-name">${aliado.nome}</div>
-                 <div class="ally-meta">
-                    Poder +${aliado.poder}<br>
-                    ${statusFruta}
-                 </div>`;
-
-            if (
-                !aliado.fruta &&
-                !aliado.recusouFrutas &&
-                jogador.inventario.length > 0
-            ) {
-                const btn =
-                    document.createElement(
-                        'button'
-                    );
-
-                btn.className =
-                    'btn-acao';
-
-                btn.textContent =
-                    'OFERECER UMA FRUTA';
-
-                btn.onclick =
-                    () =>
-                        abrirEscolhaFrutaParaAliado(
-                            index
-                        );
-
-                body.appendChild(btn);
-            }
-
-            card.append(
-                avatar,
-                body
-            );
-
-            lista.appendChild(card);
+        if (!aliado.fruta && !aliado.recusouFrutas && jogador.inventario.length) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-acao';
+            btn.textContent = 'OFERECER FRUTA';
+            aplicarImagemBotao(btn, img('OFERECER+FRUTA', '3b5840', 120, 90));
+            btn.onclick = () => abrirEscolhaFrutaParaAliado(index);
+            body.appendChild(btn);
         }
-    );
+
+        card.append(avatar, body);
+        lista.appendChild(card);
+    });
 }
 
 function montarInventarioFrutas() {
-    const lista =
-        el('lista-inventario-frutas');
-
+    const lista = el('lista-inventario-frutas');
+    if (!lista) return;
     lista.innerHTML = '';
 
-    if (
-        jogador.inventario.length === 0
-    ) {
-        return;
-    }
+    if (!jogador.inventario.length) return;
 
-    const titulo =
-        document.createElement(
-            'div'
-        );
-
-    titulo.className =
-        'empty-card';
-
-    titulo.textContent =
-        'FRUTAS GUARDADAS NO NAVIO';
-
-    lista.appendChild(titulo);
-
-    jogador.inventario.forEach(
-        (fruta, index) => {
-            const card =
-                document.createElement(
-                    'div'
-                );
-
-            card.className =
-                'inventory-card';
-
-            card.innerHTML =
-                `
-                <img
-                    class="inventory-fruit-img"
-                    src="${fruta.img}"
-                    alt="${fruta.nome}"
-                >
-
-                <div class="inventory-name">
-                    ${fruta.nome}
-                </div>
-
-                <div class="inventory-meta">
-                    ${fruta.raridade} • Poder +${fruta.poder}
-                </div>
-
-                <button
-                    class="btn-acao"
-                    ${
-                        jogador.aliados.some(
-                            a =>
-                                !a.fruta &&
-                                !a.recusouFrutas
-                        )
-                            ? ''
-                            : 'disabled'
-                    }
-                    onclick="oferecerFrutaQualquerAliado(${index})"
-                >
-                    OFERECER A UM ALIADO
-                </button>
-                `;
-
-            lista.appendChild(card);
-        }
-    );
+    jogador.inventario.forEach((frutaAtual, index) => {
+        const card = document.createElement('div');
+        card.className = 'inventory-card';
+        card.innerHTML = `
+            <img class="inventory-fruit-img" src="${frutaAtual.img}" alt="${frutaAtual.nome}">
+            <div class="inventory-name">${frutaAtual.nome}</div>
+            <div class="inventory-meta">${frutaAtual.raridade} • Poder +${frutaAtual.poder}</div>
+        `;
+        const btn = document.createElement('button');
+        btn.className = 'btn-acao';
+        btn.textContent = 'OFERECER A UM ALIADO';
+        aplicarImagemBotao(btn, img('OFERECER', '3b5840', 120, 90));
+        btn.disabled = !jogador.aliados.some(a => !a.fruta && !a.recusouFrutas);
+        btn.onclick = () => oferecerFrutaQualquerAliado(index);
+        card.appendChild(btn);
+        lista.appendChild(card);
+    });
 }
 
-function abrirEscolhaFrutaParaAliado(
-    aliadoIndex
-) {
-    const disponiveis =
-        jogador.inventario;
-
-    if (
-        !disponiveis.length
-    ) {
-        log(
-            'Você não tem fruta guardada para oferecer.'
-        );
-
+function abrirEscolhaFrutaParaAliado(aliadoIndex) {
+    const frutaIndex = jogador.inventario.length ? 0 : -1;
+    if (frutaIndex < 0) {
+        log('Você não tem frutas guardadas.');
         return;
     }
-
-    const aliado =
-        jogador.aliados[aliadoIndex];
-
-    const fruta =
-        disponiveis[0];
-
-    if (
-        disponiveis.length > 1
-    ) {
-        log(
-            `Você ofereceu a ${fruta.nome} para ${aliado.nome}.`
-        );
-    }
-
-    resolverOfertaFruta(
-        aliadoIndex,
-        jogador.inventario.indexOf(
-            fruta
-        )
-    );
+    resolverOfertaFruta(aliadoIndex, frutaIndex);
 }
 
-function oferecerFrutaQualquerAliado(
-    inventarioIndex
-) {
-    const aliadoIndex =
-        jogador.aliados.findIndex(
-            a =>
-                !a.fruta &&
-                !a.recusouFrutas
-        );
-
-    if (aliadoIndex === -1) {
-        log(
-            'Nenhum aliado disponível para receber fruta.'
-        );
-
+function oferecerFrutaQualquerAliado(inventarioIndex) {
+    const idx = jogador.aliados.findIndex(a => !a.fruta && !a.recusouFrutas);
+    if (idx === -1) {
+        log('Nenhum aliado está aceitando uma fruta.');
         return;
     }
-
-    resolverOfertaFruta(
-        aliadoIndex,
-        inventarioIndex
-    );
+    resolverOfertaFruta(idx, inventarioIndex);
 }
 
-function resolverOfertaFruta(
-    aliadoIndex,
-    inventarioIndex
-) {
-    const aliado =
-        jogador.aliados[aliadoIndex];
+function resolverOfertaFruta(aliadoIndex, inventarioIndex) {
+    const aliado = jogador.aliados[aliadoIndex];
+    const frutaGuardada = jogador.inventario[inventarioIndex];
+    if (!aliado || !frutaGuardada) return;
+    if (aliado.fruta || aliado.recusouFrutas) return;
 
-    const fruta =
-        jogador.inventario[
-            inventarioIndex
-        ];
-
-    if (!aliado || !fruta) {
-        return;
-    }
-
-    if (
-        aliado.fruta ||
-        aliado.recusouFrutas
-    ) {
-        log(
-            `${aliado.nome} já decidiu sobre frutas anteriormente.`
-        );
-
-        return;
-    }
-
-    const aceitou =
-        Math.random() <
-        aliado.chanceFruta;
-
+    const aceitou = Math.random() < 0.50;
     if (aceitou) {
-        aliado.fruta =
-            fruta;
-
-        aliado.aceitouFruta =
-            true;
-
-        jogador.inventario.splice(
-            inventarioIndex,
-            1
-        );
-
-        atualizarPoder();
-
-        log(
-            `🍈 ${aliado.nome} aceitou a ${fruta.nome}! Agora ele é usuário de Akuma no Mi.`
-        );
+        aliado.fruta = frutaGuardada;
+        aliado.aceitouFruta = true;
+        jogador.inventario.splice(inventarioIndex, 1);
+        log(`🍈 ${aliado.nome} aceitou a ${frutaGuardada.nome}! Agora ele também tem uma fruta.`);
+    } else {
+        aliado.recusouFrutas = true;
+        log(`🙅 ${aliado.nome} recusou a fruta e decidiu isso permanentemente. A fruta continua no navio.`);
     }
 
-    else {
-        aliado.recusouFrutas =
-            true;
-
-        log(
-            `🙅 ${aliado.nome} recusou a fruta. Essa decisão é PERMANENTE para este personagem. A fruta voltou para o navio.`
-        );
-    }
-
+    atualizarPoder();
     montarListaAliados();
     montarInventarioFrutas();
     atualizarCartaz();
 }
 
-// ------------------------------------------------------------
-// COMBATE
-// ------------------------------------------------------------
+// ============================================================
+// BATALHA
+// ============================================================
+
+function selecionarBossParaFacao() {
+    const ilha = ilhaAtual();
+    const lista = ilha.bosses;
+
+    if (ilha.nome === 'Marineford') {
+        if (jogador.faccao === 'Pirata') {
+            // A rota pirata pega Aokiji, Akainu e Kizaru.
+            return lista.slice(0, 3);
+        }
+        // A rota marinha pega Barba Branca, Marco e Ace.
+        return lista.slice(3);
+    }
+
+    if (jogador.faccao === 'Marinha' && ilha.nome === 'Egghead') {
+        return criarMissaoVegapunks();
+    }
+
+    return lista;
+}
+
+function criarMissaoVegapunks() {
+    if (!ilhas[estado.ilhaIndex]._vegapunks) {
+        ilhas[estado.ilhaIndex]._vegapunks = [
+            'Vegapunk Stella', 'Vegapunk Shaka', 'Vegapunk Lilith', 'Vegapunk Edison', 'Vegapunk Pythagoras', 'Vegapunk Atlas', 'Vegapunk York'
+        ].map((nome, i) => boss(nome, 1000 + i * 80, 160 + i * 12, 450000 + i * 50000, nome.toUpperCase().replaceAll(' ', '+'), true));
+    }
+    return ilhas[estado.ilhaIndex]._vegapunks;
+}
+
+function listaBossesDaIlha() {
+    if (ilhaAtual().nome === 'Marineford') return selecionarBossParaFacao();
+    if (jogador.faccao === 'Marinha' && ilhaAtual().nome === 'Egghead') return criarMissaoVegapunks();
+    return ilhaAtual().bosses;
+}
+
+function bossAtualReal() {
+    return listaBossesDaIlha()[estado.bossIndex] || null;
+}
 
 function iniciarBoss() {
-    if (bossDerrotado) {
-        log(
-            'Buggy já foi derrotado. O palhaço pode ser inconveniente, mas não tem respawn infinito aqui.'
-        );
+    const ilha = ilhaAtual();
 
+    if (ilha.options?.evento === 'alabasta-trap' && !ilha.options.trapTriggered) {
+        ativarArmadilhaAlabasta();
         return;
     }
 
-    bossAtivo = true;
-    ataqueEmAndamento = false;
-    bossHP = bossHPMax;
+    const boss = bossAtualReal();
+    if (!boss) {
+        log('Não existe outro boss nesta ilha.');
+        return;
+    }
 
-    jogador.vida =
-        jogador.vidaMaxima;
+    estado.bossAtivo = boss;
+    estado.bossHP = boss.hpMax;
+    estado.ataqueEmAndamento = false;
+    estado.hakiArmAtivo = false;
+    estado.hakiObsAtivo = false;
+    estado.hakiReiAtivo = false;
+    estado.aliadoAtacou = false;
+    jogador.vida = jogador.vidaMaxima;
 
-    hakiArmAtivo = false;
-    hakiObsAtivo = false;
+    el('nome-boss').textContent = boss.nome;
+    el('nome-boss-status').textContent = boss.nome;
+    el('img-boss-combate').src = boss.img;
+    el('img-boss-combate').onerror = () => {
+        el('img-boss-combate').onerror = null;
+        el('img-boss-combate').src = img(boss.nome.toUpperCase().replaceAll(' ', '+'), '3a2020', 500, 360);
+    };
 
-    atualizarBotoesHakiAtivo();
-
-    el('btn-reiniciar-batalha').hidden =
-        true;
-
-    el('btn-sair-batalha').hidden =
-        false;
-
+    el('btn-reiniciar-batalha').hidden = true;
+    el('btn-sair-batalha').hidden = false;
+    el('hp-boss-max').textContent = boss.hpMax;
+    mostrarBotaoHakiRei();
     montarPainelAtaques();
-
+    montarPainelAliadosBatalha();
     atualizarBarrasHP();
 
-    el('log-batalha').textContent =
-        'Buggy está rindo da sua cara. Ative seus Hakis e escolha seu ataque.';
+    if (boss.requerHaki) {
+        logBatalha(`⚠ ${boss.nome} possui uma defesa que só pode ser vencida com Haki. Ative Observação, Armamento ou Haki do Rei.`);
+    } else if (boss.extremo) {
+        logBatalha(`🔥 ${boss.nome} é uma batalha EXTREMA. Aliados não entram. Aqui o sistema pode despertar seu Haki do Rei naturalmente.`);
+    } else {
+        logBatalha(`${boss.nome} entrou no campo. Faça seu movimento.`);
+    }
 
     mudarTela('tela-combate');
 }
 
 function calcularMultiplicadoresCombate() {
     atualizarPoder();
-
+    const boss = estado.bossAtivo;
     let multJogador = 1;
     let multBoss = 1;
 
-    if (
-        jogador.poder >
-        bossPower * 2
-    ) {
-        multJogador = 5;
-    }
+    if (jogador.poder > boss.poder * 2) multJogador = 5;
+    else if (boss.poder > jogador.poder * 2) multBoss = 5;
 
-    else if (
-        bossPower >
-        jogador.poder * 2
-    ) {
-        multBoss = 5;
-    }
-
-    return {
-        multJogador,
-        multBoss
-    };
+    return { multJogador, multBoss };
 }
 
 function ataqueDisponivel(golpe) {
-    if (golpe.tipo === 'fruta') {
-        return (
-            jogador.maestriaFruta >=
-            golpe.req
-        );
-    }
-
-    if (golpe.tipo === 'estilo') {
-        return (
-            jogador.maestriaEstilo >=
-            golpe.req
-        );
-    }
-
+    if (golpe.tipo === 'fruta') return jogador.maestriaFruta >= golpe.req;
+    if (golpe.tipo === 'estilo') return jogador.maestriaEstilo >= golpe.req;
     return true;
 }
 
 function montarPainelAtaques() {
-    const painel =
-        el('painel-ataques');
-
+    const painel = el('painel-ataques');
     painel.innerHTML = '';
+    if (!estado.bossAtivo) return;
 
-    adicionarBotaoAtaque(
-        painel,
-        {
-            nome: 'Soco Básico',
-            dano: 12,
-            req: 0,
-            img: 'https://placehold.co/700x500/24323c/ffffff?text=SOCO+BASICO',
-            grupo: 'Base',
-            tipo: 'base'
-        }
-    );
+    adicionarBotaoAtaque(painel, {
+        nome: 'Soco Básico',
+        dano: 15,
+        req: 0,
+        img: img('SOCO+BASICO', '24323c', 700, 500),
+        grupo: 'Base',
+        tipo: 'base'
+    });
 
     if (jogador.estiloLuta) {
-        const estilo =
-            estilos.find(
-                item =>
-                    item.nome ===
-                    jogador.estiloLuta
-            );
-
-        if (estilo) {
-            estilo.ataques.forEach(
-                golpe =>
-                    adicionarBotaoAtaque(
-                        painel,
-                        {
-                            ...golpe,
-                            grupo: estilo.nome,
-                            tipo: 'estilo'
-                        }
-                    )
-            );
-        }
+        const estilo = estilos.find(e => e.nome === jogador.estiloLuta);
+        if (estilo) estilo.ataques.forEach(g => adicionarBotaoAtaque(painel, { ...g, grupo: estilo.nome, tipo: 'estilo' }));
     }
 
     if (jogador.fruta) {
-        jogador.fruta.ataques.forEach(
-            golpe =>
-                adicionarBotaoAtaque(
-                    painel,
-                    {
-                        ...golpe,
-                        grupo:
-                            jogador.fruta.nome,
-                        tipo: 'fruta'
-                    }
-                )
-        );
+        jogador.fruta.ataques.forEach(g => adicionarBotaoAtaque(painel, { ...g, grupo: jogador.fruta.nome, tipo: 'fruta' }));
     }
 }
 
-function adicionarBotaoAtaque(
-    painel,
-    golpe
-) {
-    const btn =
-        document.createElement(
-            'button'
-        );
+function adicionarBotaoAtaque(painel, golpe) {
+    const btn = document.createElement('button');
+    btn.className = 'ataque-btn';
+    btn.style.backgroundImage = `url("${golpe.img}")`;
+    btn.disabled = !ataqueDisponivel(golpe) || estado.ataqueEmAndamento || !estado.bossAtivo || estado.bossHP <= 0;
+    if (!btn.disabled && estado.hakiArmAtivo) btn.classList.add('unlocked-armament');
 
-    btn.className =
-        'ataque-btn';
-
-    btn.style.backgroundImage =
-        `url("${golpe.img}")`;
-
-    btn.disabled =
-        !ataqueDisponivel(golpe) ||
-        ataqueEmAndamento ||
-        !bossAtivo ||
-        bossHP <= 0;
-
-    if (
-        !btn.disabled &&
-        hakiArmAtivo
-    ) {
-        btn.classList.add(
-            'unlocked-armament'
-        );
-    }
-
-    const conteudo =
-        document.createElement(
-            'span'
-        );
-
-    conteudo.className =
-        'ataque-btn-content';
-
-    conteudo.innerHTML =
-        `
-        <span class="ataque-btn-name">
-            ${golpe.nome}
-        </span>
-
-        <span class="ataque-btn-req">
-            ${golpe.grupo} • Maestria ${golpe.req}+
-        </span>
-        `;
-
-    btn.appendChild(
-        conteudo
-    );
-
-    btn.onclick =
-        () => usarAtaque(golpe);
-
+    const conteudo = document.createElement('span');
+    conteudo.className = 'ataque-btn-content';
+    conteudo.innerHTML = `<span class="ataque-btn-name">${golpe.nome}</span><span class="ataque-btn-req">${golpe.grupo} • Maestria ${golpe.req}+</span>`;
+    btn.appendChild(conteudo);
+    aplicarImagemBotao(btn, golpe.img);
+    btn.onclick = () => usarAtaque(golpe);
     painel.appendChild(btn);
 }
 
 function usarAtaque(golpe) {
-    if (
-        !bossAtivo ||
-        bossHP <= 0 ||
-        jogador.vida <= 0 ||
-        ataqueEmAndamento
-    ) {
+    const boss = estado.bossAtivo;
+    if (!boss || estado.bossHP <= 0 || jogador.vida <= 0 || estado.ataqueEmAndamento) return;
+
+    if (!ataqueDisponivel(golpe)) {
+        logBatalha(`Maestria insuficiente para ${golpe.nome}.`);
         return;
     }
 
-    if (
-        !ataqueDisponivel(golpe)
-    ) {
-        el('log-batalha').textContent =
-            `Você ainda não tem maestria suficiente para usar ${golpe.nome}.`;
-
+    if (boss.requerHaki && !temHakiAtivo()) {
+        logBatalha(`${boss.nome} não pode ser derrotado sem Haki ativo.`);
         return;
     }
 
-    ataqueEmAndamento = true;
-
+    estado.ataqueEmAndamento = true;
     montarPainelAtaques();
 
-    const {
-        multJogador,
-        multBoss
-    } =
-        calcularMultiplicadoresCombate();
+    const { multJogador, multBoss } = calcularMultiplicadoresCombate();
+    let dano = golpe.dano * multJogador;
 
-    let dano =
-        golpe.dano *
-        multJogador;
+    if (golpe.tipo === 'fruta' && jogador.fruta?.despertada) dano *= 1.45;
+    if (estado.hakiArmAtivo) dano *= 1.25 + jogador.haki.arm * 0.025;
+    if (jogador.haki.armAvancado) dano *= 1.35;
+    if (estado.hakiReiAtivo) dano *= 1.35;
 
-    if (hakiArmAtivo) {
-        const fator =
-            1.25 +
-            jogador.haki.arm *
-            0.05;
+    dano = Math.round(dano);
+    estado.bossHP = Math.max(0, estado.bossHP - dano);
 
-        dano *= fator;
-    }
-
-    if (
-        jogador.haki.armAvancado
-    ) {
-        dano *= 1.35;
-    }
-
-    dano =
-        Math.round(dano);
-
-    bossHP =
-        Math.max(
-            0,
-            bossHP - dano
-        );
-
-    if (
-        golpe.tipo === 'fruta'
-    ) {
-        jogador.maestriaFruta =
-            Math.min(
-                10,
-                jogador.maestriaFruta + 1
-            );
-    }
+    if (golpe.tipo === 'fruta') jogador.maestriaFruta = clamped(jogador.maestriaFruta + 1, 0, 10);
 
     atualizarBarrasHP();
+    tentarDespertarHakiReiNaturalmente();
 
-    if (bossHP <= 0) {
+    logBatalha(`Você usou ${golpe.nome} e causou ${dano} de dano.${estado.hakiArmAtivo ? ' ✊ Armamento ativo.' : ''}${estado.hakiReiAtivo ? ' 👑 Rei ativo.' : ''}`);
+
+    if (estado.bossHP <= 0) {
         vencerBoss();
-
         return;
     }
 
-    setTimeout(
-        () =>
-            contraAtaqueBoss(
-                multBoss
-            ),
-        650
-    );
+    setTimeout(() => contraAtaqueBoss(multBoss), 650);
 }
 
-function contraAtaqueBoss(
-    multBoss
-) {
-    if (
-        !bossAtivo ||
-        bossHP <= 0 ||
-        jogador.vida <= 0
-    ) {
-        return;
+function temHakiAtivo() {
+    return estado.hakiArmAtivo || estado.hakiObsAtivo || estado.hakiReiAtivo;
+}
+
+function contraAtaqueBoss(multBoss) {
+    const boss = estado.bossAtivo;
+    if (!boss || estado.bossHP <= 0 || jogador.vida <= 0) return;
+
+    const baseDano = Math.max(15, Math.floor(boss.poder / 9) + Math.floor(Math.random() * 8));
+    const dano = Math.round(baseDano * multBoss);
+    let esquiva = 0.08 + jogador.haki.obs * 0.012;
+    if (estado.hakiObsAtivo) esquiva += 0.18 + jogador.haki.obs * 0.008;
+    if (jogador.haki.obsAvancado) esquiva = Math.max(esquiva, 0.90);
+    esquiva = clamped(esquiva, 0.03, 0.97);
+
+    if (Math.random() < esquiva) {
+        logBatalha(`👁 Você previu o ataque de ${boss.nome} e ESQUIVOU!`);
+    } else {
+        jogador.vida = Math.max(0, jogador.vida - dano);
+        logBatalha(`💥 ${boss.nome} contra-atacou e causou ${dano} de dano.${estado.hakiObsAtivo ? ' Sua Observação falhou desta vez.' : ''}`);
     }
 
-    const baseDano =
-        14 +
-        Math.floor(
-            Math.random() * 7
-        );
-
-    let dano =
-        Math.round(
-            baseDano *
-            multBoss
-        );
-
-    let esquiva =
-        0.08 +
-        jogador.haki.obs *
-        0.045;
-
-    if (
-        jogador.haki.obsAvancado
-    ) {
-        esquiva = 0.90;
-    }
-
-    if (hakiObsAtivo) {
-        esquiva +=
-            0.12 +
-            jogador.haki.obs *
-            0.02;
-    }
-
-    esquiva =
-        Math.min(
-            0.95,
-            esquiva
-        );
-
-    if (
-        Math.random() <
-        esquiva
-    ) {
-        jogador.vida =
-            Math.max(
-                1,
-                jogador.vida
-            );
-
-        el('log-batalha').textContent =
-            `Você usou ${
-                hakiObsAtivo
-                    ? 'o Haki da Observação'
-                    : 'seus reflexos'
-            } e ESQUIVOU do contra-ataque!`;
-    }
-
-    else {
-        jogador.vida =
-            Math.max(
-                0,
-                jogador.vida -
-                dano
-            );
-
-        el('log-batalha').textContent =
-            `Buggy contra-atacou e causou ${dano} de dano.${
-                hakiObsAtivo
-                    ? ' A Observação falhou o timing.'
-                    : ''
-            }`;
-    }
-
+    tentarDespertarHakiReiNaturalmente();
     atualizarBarrasHP();
 
-    if (
-        jogador.vida <= 0
-    ) {
-        finalizarMorte(
-            'Buggy venceu a luta. O circo fechou para você.'
-        );
-
+    if (jogador.vida <= 0) {
+        tratarDerrotaContraBoss(boss);
         return;
     }
 
-    ataqueEmAndamento =
-        false;
-
+    estado.ataqueEmAndamento = false;
+    estado.aliadoAtacou = false;
     montarPainelAtaques();
+    montarPainelAliadosBatalha();
+}
+
+function montarPainelAliadosBatalha() {
+    const painel = el('painel-aliados-batalha');
+    const lista = el('lista-ataques-aliados');
+    if (!painel || !lista) return;
+
+    const boss = estado.bossAtivo;
+    const podeAliado = Boolean(boss) && !boss.temAliados && !boss.extremo && jogador.aliados.length > 0;
+
+    painel.hidden = !podeAliado;
+    lista.innerHTML = '';
+
+    if (!podeAliado) return;
+
+    jogador.aliados.forEach((aliado, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'ataque-btn aliado-ataque-btn';
+        btn.disabled = estado.ataqueEmAndamento || estado.aliadoAtacou || estado.bossHP <= 0 || aliado.ataqueUsadoNaRodada;
+        btn.textContent = `${aliado.nome}\nATACAR`;
+        aplicarImagemBotao(btn, img(aliado.nome.toUpperCase().replaceAll(' ', '+'), '263c4e', 700, 500));
+        btn.onclick = () => usarAtaqueDoAliado(index);
+        lista.appendChild(btn);
+    });
+}
+
+function usarAtaqueDoAliado(index) {
+    const boss = estado.bossAtivo;
+    const aliado = jogador.aliados[index];
+    if (!boss || !aliado || estado.ataqueEmAndamento || estado.aliadoAtacou || estado.bossHP <= 0) return;
+    if (boss.temAliados || boss.extremo) return;
+
+    estado.ataqueEmAndamento = true;
+    estado.aliadoAtacou = true;
+    aliado.ataqueUsadoNaRodada = true;
+
+    let dano = aliado.poder * 4 + Math.floor(Math.random() * 10);
+    if (aliado.fruta) dano += Math.floor(aliado.fruta.poder * 0.8);
+    estado.bossHP = Math.max(0, estado.bossHP - dano);
+    atualizarBarrasHP();
+    logBatalha(`👥 ${aliado.nome} atacou e causou ${dano} de dano!`);
+
+    if (estado.bossHP <= 0) {
+        vencerBoss();
+        return;
+    }
+
+    setTimeout(() => {
+        // O boss responde ao turno do aliado.
+        contraAtaqueBoss(1);
+    }, 650);
 }
 
 function atualizarBarrasHP() {
-    el('hp-jogador').textContent =
-        jogador.vida;
+    const boss = estado.bossAtivo;
+    el('hp-jogador').textContent = Math.max(0, jogador.vida);
+    el('hp-max-jogador').textContent = jogador.vidaMaxima;
+    el('hp-boss').textContent = boss ? Math.max(0, estado.bossHP) : 0;
+    el('hp-boss-max').textContent = boss ? boss.hpMax : 0;
+    el('poder-combate-jogador').textContent = jogador.poder;
+    el('poder-combate-boss').textContent = boss ? boss.poder : 0;
 
-    el('hp-max-jogador').textContent =
-        jogador.vidaMaxima;
-
-    el('hp-boss').textContent =
-        Math.max(
-            0,
-            bossHP
-        );
-
-    el('poder-combate-jogador').textContent =
-        jogador.poder;
-
-    el('poder-combate-boss').textContent =
-        bossPower;
-
-    const pctJogador =
-        (
-            jogador.vida /
-            jogador.vidaMaxima
-        ) * 100;
-
-    const pctBoss =
-        (
-            bossHP /
-            bossHPMax
-        ) * 100;
-
-    el('barra-hp-jogador').style.width =
-        `${Math.max(
-            0,
-            pctJogador
-        )}%`;
-
-    el('barra-hp-boss').style.width =
-        `${Math.max(
-            0,
-            pctBoss
-        )}%`;
+    const pctJogador = jogador.vidaMaxima ? (jogador.vida / jogador.vidaMaxima) * 100 : 0;
+    const pctBoss = boss ? (estado.bossHP / boss.hpMax) * 100 : 0;
+    el('barra-hp-jogador').style.width = `${Math.max(0, pctJogador)}%`;
+    el('barra-hp-boss').style.width = `${Math.max(0, pctBoss)}%`;
 }
 
 function toggleHakiArmamento() {
-    if (!jogador.haki.arm) {
-        log(
-            'Você ainda não treinou Haki do Armamento. Faça o minigame primeiro.'
-        );
-
+    if (jogador.haki.arm <= 0) {
+        logBatalha('✊ Você ainda não tem Haki do Armamento. Treine primeiro.');
         return;
     }
-
-    hakiArmAtivo =
-        !hakiArmAtivo;
-
+    estado.hakiArmAtivo = !estado.hakiArmAtivo;
     atualizarBotoesHakiAtivo();
-
     montarPainelAtaques();
 }
 
 function toggleHakiObservacao() {
-    if (!jogador.haki.obs) {
-        log(
-            'Você ainda não treinou Haki da Observação. Faça o minigame primeiro.'
-        );
-
+    if (jogador.haki.obs <= 0) {
+        logBatalha('👁 Você ainda não tem Haki da Observação. Treine primeiro.');
         return;
     }
-
-    hakiObsAtivo =
-        !hakiObsAtivo;
-
+    estado.hakiObsAtivo = !estado.hakiObsAtivo;
     atualizarBotoesHakiAtivo();
 }
 
-function atualizarBotoesHakiAtivo() {
-    const arm =
-        el('btn-buff-arm');
-
-    const obs =
-        el('btn-buff-obs');
-
-    arm.classList.toggle(
-        'ativado',
-        hakiArmAtivo
-    );
-
-    obs.classList.toggle(
-        'ativado',
-        hakiObsAtivo
-    );
-
-    arm.querySelector(
-        'small'
-    ).textContent =
-        hakiArmAtivo
-            ? 'LIGADO • Fortificando todos os seus golpes'
-            : 'DESLIGADO • Fortalece seus golpes';
-
-    obs.querySelector(
-        'small'
-    ).textContent =
-        hakiObsAtivo
-            ? 'LIGADO • Chance de esquiva aumentada'
-            : 'DESLIGADO • Aumenta sua esquiva';
-}
-
-function vencerBoss() {
-    bossHP = 0;
-    bossAtivo = false;
-    bossDerrotado = true;
-    ataqueEmAndamento = false;
-
-    const recompensaBoss =
-        jogador.faccao === 'Tenryuubito'
-            ? 25000
-            : 15000;
-
-    jogador.recompensa +=
-        recompensaBoss;
-
-    jogador.poderBase += 5;
-
-    let mensagem =
-        `🔥 VITÓRIA! Você derrotou Buggy e recebeu B$ ${recompensaBoss.toLocaleString('pt-BR')}.`;
-
-    if (
-        jogador.haki.rei &&
-        jogador.haki.reiEstado ===
-            'Adormecido'
-    ) {
-        jogador.haki.reiEstado =
-            'Despertado!';
-
-        mensagem +=
-            '\n👑 Seu Haki do Rei despertou com o calor da batalha!';
+function toggleHakiRei() {
+    if (jogador.haki.reiEstado !== 'Despertado!') {
+        logBatalha('👑 O Haki do Rei ainda não despertou. Não existe botão para despertá-lo.');
+        return;
     }
-
-    atualizarCartaz();
-
-    atualizarBarrasHP();
-
-    el('log-batalha').textContent =
-        mensagem;
-
-    el('btn-sair-batalha').hidden =
-        false;
-
-    el('btn-boss-ilha').disabled =
-        true;
-
-    el('btn-boss-ilha').textContent =
-        'BUGGY DERROTADO';
-
+    estado.hakiReiAtivo = !estado.hakiReiAtivo;
+    atualizarBotoesHakiAtivo();
     montarPainelAtaques();
 }
 
-// ------------------------------------------------------------
-// MORTE / REINÍCIO
-// ------------------------------------------------------------
+function atualizarBotoesHakiAtivo() {
+    const arm = el('btn-buff-arm');
+    const obs = el('btn-buff-obs');
+    const rei = el('btn-buff-rei');
 
-function finalizarMorte(
-    mensagem
-) {
-    bossAtivo = false;
+    arm.classList.toggle('ativado', estado.hakiArmAtivo);
+    obs.classList.toggle('ativado', estado.hakiObsAtivo);
+    rei.classList.toggle('ativado', estado.hakiReiAtivo);
 
-    ataqueEmAndamento =
-        false;
+    arm.querySelector('small').textContent = estado.hakiArmAtivo ? 'LIGADO • Fortificando golpes' : 'DESLIGADO • Fortalece seus golpes';
+    obs.querySelector('small').textContent = estado.hakiObsAtivo ? 'LIGADO • Chance de esquiva aumentada' : 'DESLIGADO • Aumenta sua esquiva';
+    rei.querySelector('small').textContent = estado.hakiReiAtivo ? 'LIGADO • Pressão e dano do conquistador' : 'DESLIGADO • Pressão do conquistador';
+    mostrarBotaoHakiRei();
+}
 
+function vencerBoss() {
+    const boss = estado.bossAtivo;
+    if (!boss) return;
+
+    const recompensa = jogador.faccao === 'Tenryuubito' ? Math.floor(boss.recompensa * 0.25) : boss.recompensa;
+    jogador.recompensa += recompensa;
+    jogador.poderBase += 8;
+    jogador.maestriaFruta = clamped(jogador.maestriaFruta, 0, 10);
+
+    const nomeVencido = boss.nome;
+    estado.bossAtivo = null;
+    estado.bossHP = 0;
+    estado.ataqueEmAndamento = false;
+    estado.aliadoAtacou = false;
+
+    // Uma batalha difícil pode ativar o despertar do Rei. Nunca há botão de despertar.
+    if (boss.despertarRei && jogador.haki.rei && jogador.haki.reiEstado === 'Adormecido') {
+        despertarHakiRei();
+    }
+
+    estado.bossIndex++;
+
+    // Batalha final encerra a jornada.
+    if (boss.final) {
+        finalizarVitoriaFinal();
+        return;
+    }
+
+    // Katakuri termina com uma fuga obrigatória.
+    if (nomeVencido === 'Katakuri') {
+        logBatalha('🔥 Você derrotou Katakuri. Agora não existe opção bonita: VOCÊ É OBRIGADO A FUGIR PELA SUA VIDA.');
+        setTimeout(() => prepararFugaDepoisDeKatakuri(), 700);
+        return;
+    }
+
+    logBatalha(`🔥 VITÓRIA! Você derrotou ${nomeVencido} e recebeu B$ ${recompensa.toLocaleString('pt-BR')}.`);
+    atualizarCartaz();
+    atualizarBotoesIlha();
+    atualizarBarrasHP();
+    montarPainelAtaques();
+    montarPainelAliadosBatalha();
+
+    if (boss.requerHaki) log(`⚔ Você superou ${nomeVencido} graças ao Haki.`);
+    if (boss.perdeSombra) log('🌑 Gecko Moria caiu. Sua sombra continua com você porque você venceu.');
+
+    // Em Marineford e Egghead, o próximo inimigo aparece automaticamente na ilha.
+}
+
+function prepararFugaDepoisDeKatakuri() {
+    el('titulo-evento').textContent = 'FUGA DE TOTTO LAND';
+    el('nome-evento').textContent = 'Você derrotou Katakuri, agora corre.';
+    el('desc-evento').textContent = 'Big Mom e a tripulação inteira sabem que você está aqui. Fugir deixou de ser uma opção narrativa e virou obrigação.';
+    el('img-evento').src = img('FUGA+TOTTO+LAND', '522c3b', 600, 420);
+    el('botoes-evento').innerHTML = '';
+    const btn = criarBotaoEvento('FUGIR PELA VIDA', img('FUGIR', '5b1d25'), () => {
+        carregarTelaDaIlha();
+    });
+    el('botoes-evento').appendChild(btn);
+    mudarTela('tela-evento');
+}
+
+function tratarDerrotaContraBoss(boss) {
+    if (boss.extremo) {
+        jogador.vida = Math.max(1, Math.floor(jogador.vidaMaxima * 0.45));
+        estado.ataqueEmAndamento = false;
+        if (jogador.fruta) jogador.frutaPodeDespertar = true;
+        estado.bossHP = boss.hpMax;
+        estado.bossAtivo = null;
+
+        atualizarCartaz();
+        atualizarBotoesIlha();
+        log(`💀 Você perdeu para ${boss.nome}, mas sobreviveu à batalha extrema. ${jogador.fruta ? 'O choque desbloqueou a possibilidade de DESPERTAR sua Akuma no Mi.' : 'Você escapou por pouco.'}`);
+        mudarTela('tela-ilha');
+        return;
+    }
+
+    if (boss.perdeSombra) {
+        jogador.semSombra = true;
+        jogador.vida = Math.max(1, Math.floor(jogador.vidaMaxima * 0.25));
+        estado.ataqueEmAndamento = false;
+        estado.bossAtivo = null;
+        log('🌑 Você foi derrotado por Gecko Moria, mas não morreu. Sua sombra foi roubada.');
+        mudarTela('tela-ilha');
+        atualizarCartaz();
+        atualizarBotoesIlha();
+        return;
+    }
+
+    finalizarMorte(`${boss.nome} derrotou você. Sua jornada terminou aqui.`);
+}
+
+function sairDaBatalha() {
+    estado.bossAtivo = null;
+    estado.ataqueEmAndamento = false;
+    estado.hakiArmAtivo = false;
+    estado.hakiObsAtivo = false;
+    estado.hakiReiAtivo = false;
+    carregarTelaDaIlha();
+}
+
+// ============================================================
+// EVENTO DE ALABASTA
+// ============================================================
+
+function ativarArmadilhaAlabasta() {
+    ilhas[estado.ilhaIndex].options.trapTriggered = true;
+    el('titulo-evento').textContent = 'ARMADILHA';
+    el('nome-evento').textContent = 'Você caiu numa armadilha em Alabasta.';
+    el('desc-evento').textContent = 'O site te avisou antes, mas você apertou para enfrentar o boss mesmo assim. Agora prepare-se: a armadilha reduz 10% da sua vida antes da luta.';
+    el('img-evento').src = img('ALABASTA+ARMADILHA', '5e442d', 600, 420);
+    el('botoes-evento').innerHTML = '';
+
+    const btn = criarBotaoEvento('CONTINUAR NA ARMADILHA', img('ARMADILHA', '5e3028'), () => {
+        const dano = Math.floor(jogador.vidaMaxima * 0.10);
+        jogador.vida = Math.max(1, jogador.vida - dano);
+        log(`🏜️ A armadilha funcionou. Você perdeu ${dano} de vida e agora encara o Crocodile.`);
+        mudarTela('tela-ilha');
+        iniciarBoss();
+    });
+    el('botoes-evento').appendChild(btn);
+    mudarTela('tela-evento');
+}
+
+// ============================================================
+// FINAL
+// ============================================================
+
+function finalizarVitoriaFinal() {
+    jogador.emJornada = false;
+    estado.bossAtivo = null;
+    atualizarCartaz();
+    el('titulo-evento').textContent = 'FIM DA JORNADA';
+    el('nome-evento').textContent = `Você derrotou Imu.`;
+    el('desc-evento').textContent = jogador.faccao === 'Pirata'
+        ? 'Sua aventura chegou ao último inimigo. O mundo nunca mais vai ser o mesmo.'
+        : jogador.faccao === 'Marinha'
+            ? 'Você chegou ao topo absoluto da sua missão. A era terminou no seu turno.'
+            : 'Até o Governo Mundial precisou admitir que isso foi longe demais.';
+    el('img-evento').src = img('FIM+DA+JORNADA', '151515', 600, 420);
+    el('botoes-evento').innerHTML = '';
+
+    const btn = criarBotaoEvento('JOGAR NOVAMENTE', img('REINICIAR', '5b1d25'), reiniciarJornada);
+    el('botoes-evento').appendChild(btn);
+    mudarTela('tela-evento');
+    log('👑 FIM. A rota inteira foi concluída.');
+}
+
+function finalizarMorte(mensagem) {
+    jogador.emJornada = false;
+    estado.bossAtivo = null;
+    estado.ataqueEmAndamento = false;
     cancelarLoopsMinigame();
-
-    el('texto-gameover').textContent =
-        mensagem;
-
-    mudarTela(
-        'tela-gameover'
-    );
-
-    log(
-        '☠ FIM DE JOGO.'
-    );
+    el('texto-gameover').textContent = mensagem;
+    el('btn-reiniciar-batalha').hidden = false;
+    atualizarCartaz();
+    mudarTela('tela-gameover');
+    log('☠ FIM DE JOGO.');
 }
 
 function reiniciarJornada() {
     window.location.reload();
 }
 
-// ------------------------------------------------------------
+// ============================================================
 // INICIALIZAÇÃO
-// ------------------------------------------------------------
+// ============================================================
 
 (function iniciarInterface() {
-    el('cartaz').style.display =
-        'none';
+    ilhas.forEach(i => {
+        i.buscasFruta = 2;
+        i.estiloBuscaDisponivel = true;
+        i.options = i.options || {};
+    });
 
-    el('opcoes-marinha').hidden =
-        true;
+    el('cartaz').style.display = 'none';
+    el('opcoes-marinha').hidden = true;
+    el('opcoes-tenryuubito').hidden = true;
+    el('btn-despertar-fruta').hidden = true;
+    el('btn-buff-rei').hidden = true;
+    el('tela-criacao').classList.add('tela-ativa');
 
-    el('opcoes-tenryuubito').hidden =
-        true;
-
-    el('btn-treino-rei').hidden =
-        true;
-
-    el('tela-criacao')
-        .classList
-        .add('tela-ativa');
-
+    renderizarImagensDosBotoes();
     atualizarHeader();
+    atualizarCartaz();
 })();
