@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Piece RPG V11.6</title>
+    <!--
+      MAPA RÁPIDO DO HTML: #left-panel é o cartaz/ficha do jogador; #right-panel contém as telas.
+      As telas principais são #tela-ilha, #tela-aliados, #tela-estilos e #tela-combate.
+      IMAGENS DOS BOTÕES: troque o URL dentro de data-img="..." no botão desejado.
+      Retratos de estilos, bosses e aliados são definidos em tesouro_V11.js. Para trocar TODAS as frutas, procure a seção IMAGENS_FRUTAS no mesmo JS e preencha os caminhos ali.
+    -->
+    <!-- PERSONALIZAR IMAGENS:
+         • Imagens dos botões: troque o URL de data-img="..." no botão.
+         • Cartões com <img src="..."> (ex.: barcos): troque o src também.
+         • Fotos de bosses, estilos, formas, frutas, aliados e miniaturas das ilhas: procure os mapas
+           IMAGENS_BOSSES, IMAGENS_ESTILOS, IMAGENS_FORMAS_ESTILO,
+           IMAGENS_FRUTAS, IMAGENS_ALIADOS e IMAGENS_ILHAS em tesouro_V11.js.
+         • Foto do personagem: IMAGENS_PERSONAGEM no começo de tesouro_V11.js (Gigante fica fora dessa lista).
+         • Cole uma URL direta ou um caminho relativo, como imagens/bosses/morgan.png.
+    -->
+    <link rel="stylesheet" href="kingofpirates_V11.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside id="left-panel">
+            <div class="cartaz-wanted" id="cartaz">
+                <div class="wanted-top">MARINHA • GOVERNO MUNDIAL</div>
+                <h1>WANTED</h1>
+                <div class="wanted-photo-wrap">
+                    <img id="img-personagem" src="" alt="Retrato do personagem">
+                </div>
+                <h2 id="nome-pirata">NOVATO</h2>
+                <p class="wanted-sub" id="titulo-pirata">Ainda sem uma história para contar</p>
+
+                <div class="wanted-info">
+                    <div><b>Facção</b><span id="faccao-pirata">---</span></div>
+                    <div><b>Raça</b><span id="raca-pirata">---</span></div>
+                    <div><b>Gênero</b><span id="genero-pirata">---</span></div>
+                    <div><b>Estilo</b><span id="estilo-pirata">Nenhum</span></div>
+                    <div><b>Akuma no Mi</b><span id="fruta-pirata">Nenhuma</span></div>
+                </div>
+
+                <img id="img-fruta-perfil" class="fruit-profile" src="" alt="Akuma no Mi" hidden>
+
+                <div class="haki-box">
+                    <div><span>OBS.</span><strong id="haki-obs">0/30</strong></div>
+                    <div><span>ARM.</span><strong id="haki-arm">0/30</strong></div>
+                    <div><span>REI</span><strong id="haki-rei">Não possui</strong></div>
+                </div>
+
+                <div class="power-line">
+                    <span>PODER</span>
+                    <strong id="poder-jogador-poster">10</strong>
+                </div>
+
+                <div class="bounty-line">
+                    <small>DEAD OR ALIVE</small>
+                    <span>B$ <strong id="recompensa-pirata">0</strong></span>
+                </div>
+            </div>
+        </aside>
+
+        <main id="right-panel">
+            <header class="game-header">
+                <div>
+                    <span class="eyebrow">EAST BLUE • 1520</span>
+                    <h1>ONE PIECE: O INÍCIO</h1>
+                </div>
+                <div class="header-status">
+                    <span id="status-ilha">Vila Foosha</span>
+                    <span id="status-barco">Sem barco</span>
+                </div>
+            </header>
+
+            <div id="log-eventos" role="status">Escolha uma facção para começar sua jornada.</div>
+
+            <!-- TELA 0: CRIAÇÃO -->
+            <section id="tela-criacao" class="tela-ativa">
+                <div class="story-card opening-card">
+                    <span class="chapter">CAPÍTULO 01</span>
+                    <h2>Você acabou de sair da Vila Foosha...</h2>
+                    <p>
+                        A vila natal de Luffy fica para trás. Você ainda não tem nome, fama,
+                        barco ou a menor ideia de onde está se metendo.
+                    </p>
+                    <p class="muted">A origem especial é sorteada automaticamente: se você nascer Tenryuubito, não escolhe Marinha ou Pirata. Caso contrário, escolha sua facção. O Haki do Rei também é decidido pelo sistema.</p>
+                </div>
+
+                <div id="bloco-escolha-faccao">
+                    <h3 class="section-title">De que lado você vai começar?</h3>
+                    <div class="faccao-grid">
+                        <button class="faccao-btn" id="btn-marinha" data-img="https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/One_Piece_Marines_flag.svg/1280px-One_Piece_Marines_flag.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail" onclick="escolherFaccao('Marinha')">
+                            <span class="choice-icon">⚓</span>
+                            <b>MARINHA</b>
+                            <small>Justiça e patente.</small>
+                        </button>
+                        <button class="faccao-btn" id="btn-pirata" data-img="https://p.kindpng.com/picc/s/483-4832333_jolly-roger-png-photos-one-piece-logo-transparent.png" onclick="escolherFaccao('Pirata')">
+                            <span class="choice-icon">☠</span>
+                            <b>PIRATA</b>
+                            <small>Liberdade e recompensa.</small>
+                        </button>
+                    </div>
+                    <p class="small-note">1% de chance de nascer Tenryuubito. Se o sorteio não escolher essa origem, você escolhe Marinha ou Pirata. O sistema também decide os 30% de chance de Haki do Rei adormecido.</p>
+                </div>
+                <div id="bloco-tenryuubito-sorteado" class="story-card" style="display:none; margin-bottom:16px;">
+                    <span class="chapter">ORIGEM CELESTIAL</span>
+                    <h3>Tenryuubito</h3>
+                    <p>O Governo Mundial determinou sua origem. Você não escolhe Marinha nem Pirata. A criação seguirá diretamente como Tenryuubito.</p>
+                </div>
+                <button class="btn-acao btn-primary large-action" data-img="https://media.tenor.com/4OYd5OlYR9wAAAAM/gamba-xqc.gif" onclick="criarPersonagem()">CRIAR MEU PERSONAGEM</button>
+            </section>
+
+            <!-- TELA 1: FOOSHA / BARCO -->
+            <section id="tela-barco" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">VILA FOOSHA</span>
+                    <h2>Você precisa de um barco.</h2>
+                    <p id="texto-inicio-ilha">
+                        A aventura começa oficialmente agora. O problema é a pequena parte chamada “ter uma embarcação”.
+                    </p>
+                </div>
+
+                <div class="button-row" style="margin-top: 18px;">
+                    <button class="btn-acao" data-img="https://static.wikia.nocookie.net/onepiece/images/c/cf/Foosha_Village_Infobox.png/revision/latest?cb=20210903212140&path-prefix=pt" onclick="carregarTelaDaIlha()">EXPLORAR VILA FOOSHA / PROCURAR FRUTA</button>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-pirata">
+                    <button class="boat-card" data-img="https://kanto.legiaodosherois.com.br/w760-h398-cfill/wp-content/uploads/2023/10/legiao_dRxFEpugLbjJ.jpg.webp" onclick="roubarBarco()">
+                        <img src="https://kanto.legiaodosherois.com.br/w760-h398-cfill/wp-content/uploads/2023/10/legiao_dRxFEpugLbjJ.jpg.webp" alt="Barco para roubar">
+                        <span>Roubar um barco</span>
+                        <small>50% de chance • 1 tentativa</small>
+                    </button>
+                    <button class="boat-card" data-img="https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQh_jUMXP98-rMRALKmtUDpaYkOyWDDwzWeHOPj8gxZAv1hyoYr" onclick="comprarBarco()">
+                        <img src="https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcQh_jUMXP98-rMRALKmtUDpaYkOyWDDwzWeHOPj8gxZAv1hyoYr" alt="Barco barato">
+                        <span>Comprar uma velharia</span>
+                        <small>Sem falha. Só sem luxo.</small>
+                    </button>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-marinha" hidden>
+                    <button class="boat-card" data-img="https://i.pinimg.com/736x/04/ae/3d/04ae3d02080b78efbfd061dcbd22d574.jpg" onclick="receberNavioMarinha()">
+                        <img src="https://i.pinimg.com/736x/04/ae/3d/04ae3d02080b78efbfd061dcbd22d574.jpg" alt="Navio da Marinha">
+                        <span>Apresentar-se à base</span>
+                        <small>Você é da Marinha. Roubar barco aqui não existe.</small>
+                    </button>
+                </div>
+
+                <div class="opcoes-barco" id="opcoes-tenryuubito" hidden>
+                    <button class="boat-card gold-card" data-img="https://static.wikia.nocookie.net/onepiece/images/a/ae/Jalmack%27s_Ship.png/revision/latest?cb=20240727174107&path-prefix=pt" onclick="chamarNavioGoverno()">
+                        <img src="https://static.wikia.nocookie.net/onepiece/images/a/ae/Jalmack%27s_Ship.png/revision/latest?cb=20240727174107&path-prefix=pt" alt="Navio do Governo Mundial">
+                        <span>Chamar navio do Governo Mundial</span>
+                        <small>Privilegio nível absurdo.</small>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TELA 2: MAPA -->
+            <section id="tela-mapa" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">MAPA DE NAVEGAÇÃO</span>
+                    <h2>As ilhas que você já pisou ficam conhecidas.</h2>
+                    <p>As próximas ilhas são <strong>????</strong> até você realmente chegar nelas.</p>
+                </div>
+                <div id="rota-ilhas" class="map-route"></div>
+                <div class="button-row map-controls">
+                    <button class="btn-acao btn-primary" id="btn-proxima-ilha" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJwQKWrKrswDx6l1ZMgmrQFZAPPPtgO4eI2Kk-jUjb5A&s" onclick="irParaProximaIlha()">SEGUIR A ROTA</button>
+                    <button class="btn-acao" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrgz5_4DnDmjam_gPFPe4FGNKj3YNSUslSw_J8qDyHqWexgc4p7UtAXLM&s=10" onclick="voltarParaIlhaAtual()">VOLTAR À ILHA ATUAL</button>
+                    <button class="btn-acao" id="btn-voltar-barco" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrgz5_4DnDmjam_gPFPe4FGNKj3YNSUslSw_J8qDyHqWexgc4p7UtAXLM&s=10" onclick="voltarParaEscolhaDeBarco()">VOLTAR À ESCOLHA DE BARCO</button>
+                </div>
+            </section>
+
+            <!-- TELA 3: ILHA -->
+            <section id="tela-ilha" class="tela-oculta">
+                <div class="island-banner">
+                    <div>
+                        <span class="chapter">LOCAL ATUAL</span>
+                        <h2 id="nome-ilha-atual">Vila Foosha</h2>
+                        <p id="descricao-ilha">A história ainda está começando.</p>
+                    </div>
+                    <div class="island-count">
+                        <span>BUSCAS DE AKUMA NO MI</span>
+                        <strong><span id="count-fruta">0</span>/2</strong>
+                    </div>
+                </div>
+
+                <div class="action-grid">
+                    <button class="action-card" data-img="https://criticalhits.com.br/wp-content/uploads/2024/10/d3978-17292317819748-1920-1280x681.webp" onclick="procurarFruta()">
+                        <span class="action-icon">🍈</span>
+                        <b>PROCURAR AKUMA NO MI</b>
+                        <small>2 buscas por ilha • todas as frutas no sorteio</small>
+                    </button>
+                    <button class="action-card" data-img="https://www.loskatchorros.com.br/forum/uploads/monthly_2020_03/123266071_zorotreino.gif.483b1f6795f39e5a48014916e9434746.gif" onclick="procurarEstilo()">
+                        <span class="action-icon">⚔</span>
+                        <b>PROCURAR MESTRE</b>
+                        <small>Escolha aceitar ou recusar o estilo</small>
+                    </button>
+                    <button class="action-card" id="btn-treino-obs" data-img="https://media1.tenor.com/m/R85XR6QhaVQAAAAd/treino-luffy.gif" onclick="abrirMinigame('obs')">
+                        <span class="action-icon">👁</span>
+                        <b>TREINAR OBSERVAÇÃO</b>
+                        <small>Uma conclusão por ilha</small>
+                    </button>
+                    <button class="action-card" id="btn-treino-arm" data-img="https://c.tenor.com/7_lj90cCzDkAAAAd/tenor.gif" onclick="abrirMinigame('arm')">
+                        <span class="action-icon">✊</span>
+                        <b>TREINAR ARMAMENTO</b>
+                        <small>Uma conclusão por ilha</small>
+                    </button>
+                    <button class="action-card" data-img="https://media.tenor.com/LpVUVlRoZ5UAAAAM/aushesh-apa2.gif" onclick="abrirAliados()">
+                        <span class="action-icon">👥</span>
+                        <b>ALIADOS / TRIPULAÇÃO</b>
+                        <small>Recrutar e oferecer frutas</small>
+                    </button>
+                    <button class="action-card" data-img="https://sm.ign.com/ign_br/screenshot/default/nami-zoro-one-piece_gckc.png" onclick="abrirCatalogoEstilos('equipar')">
+                        <span class="action-icon">⚔️</span>
+                        <b>MEUS ESTILOS</b>
+                        <small>Ver maestria, despertares e equipar só um</small>
+                    </button>
+                </div>
+
+                <div class="split-actions">
+                    <div class="mini-card">
+                        <span class="mini-label">DESAFIO</span>
+                        <button class="btn-acao btn-primary" id="btn-boss-ilha" data-img="https://static.wikia.nocookie.net/world-of-warriors/images/1/1b/BOSS_FIGHT%21.png/revision/latest?cb=20180408104052" onclick="iniciarBoss()">ENFRENTAR</button>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">NAVEGAÇÃO</span>
+                        <button class="btn-acao" data-img="https://www.shutterstock.com/image-vector/pixelated-location-pin-icon-set-260nw-2668866845.jpg" onclick="mudarTela('tela-mapa')">VOLTAR AO MAPA</button>
+                    </div>
+                </div>
+
+                <div class="story-card progression-note">
+                    <p id="texto-progressao-ilha">Explore a ilha, lute e siga a rota.</p>
+                </div>
+            </section>
+
+            <!-- TELA 4: EVENTOS -->
+            <section id="tela-evento" class="tela-oculta">
+                <div class="event-card">
+                    <span class="chapter" id="titulo-evento">EVENTO</span>
+                    <img id="img-evento" class="event-image" src="" alt="Imagem do evento">
+                    <h2 id="nome-evento">Aconteceu alguma coisa...</h2>
+                    <p id="desc-evento"></p>
+                    <div id="botoes-evento" class="button-row"></div>
+                </div>
+            </section>
+
+            <!-- TELA 5: MINIGAME -->
+            <section id="tela-minigame" class="tela-oculta">
+                <div class="training-card">
+                    <span class="chapter">TREINAMENTO</span>
+                    <h2 id="titulo-minigame">Haki</h2>
+                    <p id="instrucao-minigame"></p>
+                    <div id="timer-minigame" class="training-timer" hidden>5</div>
+
+                    <div id="nota-treino" class="training-score" hidden></div>
+
+                    <div id="obs-minigame" hidden>
+                        <div class="crosshair-stage" id="obs-stage">
+                            <div class="obs-target" id="obs-target"><span>ALVO</span></div>
+                            <div class="mc-crosshair" id="obs-crosshair"></div>
+                        </div>
+                        <div class="training-tip">ESPAÇO ou AÇÃO quando a mira estiver sobre o alvo.</div>
+                    </div>
+
+                    <div id="arm-minigame" hidden>
+                        <div class="heavy-stage">
+                            <div class="heavy-zone" id="arm-zone"></div>
+                            <div class="heavy-needle" id="arm-needle"></div>
+                        </div>
+                        <div class="heavy-meter-labels"><span>0</span><span>FORÇA</span><span>100</span></div>
+                        <div class="training-tip">SEGURE ESPAÇO / AÇÃO para empurrar a agulha pesada. Solte na zona verde.</div>
+                    </div>
+
+                    <div class="button-row training-controls">
+                        <button class="btn-acao btn-primary" id="btn-acao-minigame" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcREpJt2JsawOUUzGRRfHheIW3I-E7JnLbucIxQBxy4xZ-tOESPDaHbaSx_M&s=10" >AÇÃO</button>
+                        <button class="btn-acao" id="btn-tentar-novamente" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv7UmSRsAUG7Pji3OLNLJEJy-QyIfXBSUq-FyffOUq1W04S9GrlxELKqU&s=10" onclick="recomecarMinigame()" hidden>TENTAR NOVAMENTE</button>
+                        <button class="btn-acao" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzJPwZApbjEYIkbaN4aKoB6dzRJnl0VrUBOvk7rVLwJw&s=10" onclick="fecharMinigame()">VOLTAR</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TELA 6: ALIADOS -->
+            <section id="tela-aliados" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">TRIPULAÇÃO</span>
+                    <h2>Quem está no seu barco?</h2>
+                    <p>Cada aliado pode atacar em batalhas onde isso for permitido.</p>
+                </div>
+
+                <div class="ally-toolbar">
+                    <button class="btn-acao btn-primary" id="btn-procurar-aliado" data-img="https://i.pinimg.com/1200x/6b/76/57/6b76577d641a7f1e9700016072a51344.jpg" onclick="procurarAliado()">PROCURAR ALIADO</button>
+                    <button class="btn-acao" id="btn-abrir-bau-frutas" data-img="https://s.aficionados.com.br/imagens/devil-fruit-01_cke.jpg" onclick="abrirBauFrutas()">BAÚ DE FRUTAS</button>
+                    <span id="contador-tripulacao">Tripulação: 0</span>
+                </div>
+
+                <div id="lista-aliados" class="ally-list"></div>
+                <!-- PAINEL DE ESCOLHA DE ESTILO DO ALIADO: tesouro_V11.js monta aqui os estilos que o jogador já aprendeu. -->
+                <div id="painel-seletor-estilos-aliado" class="v8-style-offer-panel" hidden></div>
+                <div id="lista-inventario-frutas" class="fruit-inventory" hidden></div>
+                <div id="painel-bau-frutas" class="v7-boat-inventory" hidden></div>
+
+                <button class="btn-acao" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrgz5_4DnDmjam_gPFPe4FGNKj3YNSUslSw_J8qDyHqWexgc4p7UtAXLM&s=10" onclick="mudarTela('tela-ilha')">VOLTAR PARA ILHA</button>
+            </section>
+
+            <!-- TELA 6.5: MEUS ESTILOS / MESTRES / ENSINAR ESTILOS -->
+            <section id="tela-estilos" class="tela-oculta">
+                <div class="story-card">
+                    <span class="chapter">ESTILOS DE LUTA</span>
+                    <h2>Aprenda vários estilos, equipe só um por vez.</h2>
+                    <p>Maestria fica salva separadamente em cada estilo. Ganhar um boss dá +1 de maestria ao estilo equipado no momento da vitória.</p>
+                    <label class="v7-search-label" for="filtro-estilos-jogador">Pesquisar estilo pelo nome</label>
+                    <input id="filtro-estilos-jogador" class="v7-search-input" type="search" placeholder="Ex.: Santoryu, Perna Negra, Rokushiki..." oninput="renderizarCatalogoEstilos()">
+                </div>
+                <div id="catalogo-estilos-jogador" class="v7-style-catalog"></div>
+                <div class="button-row">
+                    <button class="btn-acao" data-img="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrgz5_4DnDmjam_gPFPe4FGNKj3YNSUslSw_J8qDyHqWexgc4p7UtAXLM&s=10" onclick="voltarDoCatalogoEstilos()">VOLTAR</button>
+                </div>
+            </section>
+
+            <!-- TELA 7: COMBATE -->
+            <section id="tela-combate" class="tela-oculta">
+                <div class="battle-head">
+                    <span class="chapter">BATALHA</span>
+                    <div class="boss-portrait-wrap">
+                        <img id="img-boss-combate" src="" alt="Foto do boss">
+                    </div>
+                    <h2><span id="nome-boss">BOSS</span></h2>
+                    <p>Poder do jogador: <strong id="poder-combate-jogador">0</strong> • Poder do inimigo: <strong id="poder-combate-boss">0</strong></p>
+                    <p class="combat-advanced-stats">DANO: <strong id="dano-combate-jogador">0</strong> • REDUÇÃO DE DANO: <strong id="reducao-combate-jogador">0%</strong></p>
+                </div>
+
+                <div class="battle-status">
+                    <div class="fighter-panel player-panel">
+                        <div class="fighter-title">VOCÊ</div>
+                        <div class="hp-number"><span id="hp-jogador">120</span> / <span id="hp-max-jogador">120</span></div>
+                        <div class="hp-bar"><span id="barra-hp-jogador"></span></div>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="fighter-panel boss-panel">
+                        <div class="fighter-title" id="nome-boss-status">BOSS</div>
+                        <div class="hp-number"><span id="hp-boss">0</span> / <span id="hp-boss-max">0</span></div>
+                        <div class="hp-bar boss-bar"><span id="barra-hp-boss"></span></div>
+                    </div>
+                </div>
+
+                <div id="painel-almirante-tenryuubito" class="tenryuubito-ally-status" hidden>
+                    <div class="tenryuubito-ally-kicker">☼ PROTEÇÃO DO GOVERNO MUNDIAL</div>
+                    <strong id="status-almirante-tenryuubito">Nenhum Almirante convocado</strong>
+                    <small>O Almirante enfrenta o inimigo no seu lugar. Você acompanha o duelo protegido, sem atacar.</small>
+                </div>
+
+                <div class="combat-haki"> 
+                    <button id="btn-buff-arm" class="btn-haki-toggle" data-img="https://static.wikia.nocookie.net/infinitas-guerras/images/f/f1/Haki.gif/revision/latest/scale-to-width-down/285?cb=20161105193623&path-prefix=pt-br" onclick="toggleHakiArmamento()">
+                        <span>✊ ARMAMENTO</span>
+                        <small>DESLIGADO • Fortalece seus golpes</small>
+                    </button>
+                    <button id="btn-buff-obs" class="btn-haki-toggle" data-img="https://media.tenor.com/M5rWLxu-jOUAAAAM/katakuri-whole.gif" onclick="toggleHakiObservacao()">
+                        <span>👁 OBSERVAÇÃO</span>
+                        <small>DESLIGADO • Aumenta sua esquiva</small>
+                    </button>
+                    <button id="btn-buff-rei" class="btn-haki-toggle" data-img="https://c.tenor.com/6VPFIB-QgG8AAAAd/tenor.gif" onclick="toggleHakiRei()" hidden>
+                        <span>👑 HAKI DO REI</span>
+                        <small>DESLIGADO • Pressão do conquistador</small>
+                    </button>
+                    <button id="btn-revestir-rei" class="btn-haki-toggle" data-img="https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2F6oi9ev1qxvh91.gif" onclick="toggleRevestimentoRei()" hidden>
+                        <span>👑⚡ REVESTIR GOLPES</span>
+                        <small>Disponível somente contra Kaido</small>
+                    </button>
+                </div>
+
+                <div id="log-batalha" class="battle-log">O inimigo observa você. Faça seu movimento.</div>
+
+                <div class="attack-section">
+                    <div class="attack-group-title">ATAQUES</div>
+                    <div id="painel-ataques" class="attack-grid"></div>
+                </div>
+
+                <div id="painel-aliados-batalha" class="battle-allies" hidden>
+                    <div class="attack-group-title">ATAQUES DOS ALIADOS</div>
+                    <div id="lista-ataques-aliados" class="attack-grid"></div>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-acao" id="btn-sair-batalha" data-img="https://placehold.co/120x90/2e3d4e/ffffff?text=SAIR" onclick="sairDaBatalha()">VOLTAR PARA ILHA</button>
+                    <button class="btn-acao btn-danger" id="btn-reiniciar-batalha" data-img="https://placehold.co/120x90/5b1d25/ffffff?text=RESET" onclick="reiniciarJornada()" hidden>REINICIAR JORNADA</button>
+                </div>
+            </section>
+
+            <!-- GAME OVER -->
+            <section id="tela-gameover" class="tela-oculta">
+                <div class="gameover-card">
+                    <div class="gameover-skull">☠</div>
+                    <h2>FIM DE JOGO</h2>
+                    <p id="texto-gameover">Sua jornada acabou.</p>
+                    <button class="btn-acao btn-danger" data-img="https://png.pngtree.com/png-clipart/20210311/original/pngtree-game-over-screen-design-pink-with-try-again-button-png-image_6006361.jpg" onclick="reiniciarJornada()">RECOMEÇAR DO ZERO</button>
+                </div>
+            </section>
+
+            <!-- TELA NAVEGAÇÃO -->
+            <section id="tela-navegacao" class="tela-oculta">
+                <div class="sailing-card">
+                    <div class="wave-loader"><span></span><span></span><span></span></div>
+                    <h2 id="texto-navegando">NAVEGANDO</h2>
+                    <p id="subtexto-navegando">O mar está decidindo se hoje você vai ter paz.</p>
+                </div>
+            </section>
+
+            <!-- EVENTO NO MAR / TRAVESSIA ESPECIAL -->
+            <section id="tela-evento-mar" class="tela-oculta">
+                <div class="event-card sea-event">
+                    <span class="chapter">TRAVESSIA</span>
+                    <div id="imagem-evento-mar" class="sea-monster">🌊</div>
+                    <h2 id="titulo-evento-mar">EVENTO NO MAR</h2>
+                    <p id="desc-evento-mar"></p>
+                    <div id="acoes-evento-mar" class="button-row"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="tesouro_V11.js"></script>
+<!-- Yuami Yamkio: configure golpes no início de tesouro_V11.js, nas listas de frutas e imagens. -->
+</body>
+</html>
