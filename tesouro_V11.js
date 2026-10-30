@@ -33,7 +33,7 @@ const IMAGENS_PERSONAGEM = {
     'Homem-Peixe-Fêmea': 'https://static.wikia.nocookie.net/onepiece/images/c/c7/Otohime_Anime_Infobox.png/revision/latest?cb=20190228121850&path-prefix=pt',
     // Lunários
     'Lunaria-Macho': 'https://criticalhits.com.br/wp-content/uploads/2024/01/collage-maker-05-jul-2023-12-38.webp',
-    'Lunaria-Fêmea': 'imagens\\what-are-your-honest-thoughts-about-s-snake-v0-yjn0nr3xfnve1.webp',
+    'Lunaria-Fêmea': 'imagens\what-are-your-honest-thoughts-about-s-snake-v0-yjn0nr3xfnve1.webp',
     // Gigantes: adicionados sem alterar as fotos que já existiam.
     'Gigante-Macho': 'imagens\\7343df87-1e30-4ff4-a3c2-a24b0dbe2619.png',
     'Gigante-Fêmea': 'imagens\\7e7d673b-e262-4bdc-b712-67c437209327.png',
